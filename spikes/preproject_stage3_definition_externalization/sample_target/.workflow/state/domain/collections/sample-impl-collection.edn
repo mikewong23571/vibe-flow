@@ -1,0 +1,6 @@
+{:id "sample-impl-collection",
+ :task-type :impl,
+ :name "sample target repo tasks",
+ :created-at "2026-04-22T00:58:48.481327113Z",
+ :updated-at "2026-04-22T00:58:48.481348603Z",
+ :task-ids ["sample-impl-task"]}

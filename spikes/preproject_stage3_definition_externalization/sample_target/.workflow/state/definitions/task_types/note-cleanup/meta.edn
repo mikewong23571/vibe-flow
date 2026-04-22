@@ -1,0 +1,13 @@
+{:layout-version 1,
+ :managed-by :spike-v3.toolchain,
+ :updated-at "2026-04-21T18:27:53.201283142Z",
+ :source
+ {:kind :target-created,
+  :created-in-target
+  "/home/mikewong/proj/main/vibe-flow/preproject_stage3_definition_externalization/sample_target"},
+ :installed-at "2026-04-21T18:27:53.201283142Z",
+ :checksum
+ "bf4f2f06b460c26b23be580f66511cb93e5e4a3a5a239e93d407c56756b5447c",
+ :status :active,
+ :id :note-cleanup,
+ :version 1}

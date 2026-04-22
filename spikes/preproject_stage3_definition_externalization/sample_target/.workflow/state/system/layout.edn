@@ -1,0 +1,14 @@
+{:layout-version 1,
+ :updated-at "2026-04-22T00:58:48.626204544Z",
+ :state-layout
+ {:system-root
+  "/home/mikewong/proj/main/vibe-flow/preproject_stage3_definition_externalization/sample_target/.workflow/state/system",
+  :definitions-root
+  "/home/mikewong/proj/main/vibe-flow/preproject_stage3_definition_externalization/sample_target/.workflow/state/definitions",
+  :domain-root
+  "/home/mikewong/proj/main/vibe-flow/preproject_stage3_definition_externalization/sample_target/.workflow/state/domain",
+  :local-root
+  "/home/mikewong/proj/main/vibe-flow/preproject_stage3_definition_externalization/sample_target/.workflow/local"},
+ :registries
+ {:task-types
+  "/home/mikewong/proj/main/vibe-flow/preproject_stage3_definition_externalization/sample_target/.workflow/state/system/registries/task_types.edn"}}

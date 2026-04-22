@@ -1,0 +1,66 @@
+{:governance
+ {:system-models
+  ["/home/mikewong/proj/main/vibe-flow/preproject_stage3_definition_externalization/sample_target/.workflow/state/system/install.edn"
+   "/home/mikewong/proj/main/vibe-flow/preproject_stage3_definition_externalization/sample_target/.workflow/state/system/target.edn"
+   "/home/mikewong/proj/main/vibe-flow/preproject_stage3_definition_externalization/sample_target/.workflow/state/system/layout.edn"
+   "/home/mikewong/proj/main/vibe-flow/preproject_stage3_definition_externalization/sample_target/.workflow/state/system/registries/task_types.edn"],
+  :definition-models
+  ["/home/mikewong/proj/main/vibe-flow/preproject_stage3_definition_externalization/sample_target/.workflow/state/definitions/task_types"],
+  :domain-models
+  ["/home/mikewong/proj/main/vibe-flow/preproject_stage3_definition_externalization/sample_target/.workflow/state/domain/collections"
+   "/home/mikewong/proj/main/vibe-flow/preproject_stage3_definition_externalization/sample_target/.workflow/state/domain/tasks"],
+  :local-runtime-state
+  ["/home/mikewong/proj/main/vibe-flow/preproject_stage3_definition_externalization/sample_target/.workflow/local/runs"
+   "/home/mikewong/proj/main/vibe-flow/preproject_stage3_definition_externalization/sample_target/.workflow/local/mgr_runs"
+   "/home/mikewong/proj/main/vibe-flow/preproject_stage3_definition_externalization/sample_target/.workflow/local/agent_homes"]},
+ :principles
+ ["target is the git repository being worked on"
+  "definition layer is installed as artifacts inside target/.workflow/state/definitions/task_types"
+  "workflow state is split into system models, definition models, domain models, and local runtime state"
+  "task_type is managed as a package with task_type.edn, meta.edn, prompts, hooks, and registry entry"
+  "install writes install metadata, target metadata, layout metadata, task_type artifacts, agent_homes, and .gitignore updates"
+  "mgr remains a separate agent and calls workflow CLI to return control to toolchain"
+  "run is both an execution record and a runtime container"
+  "each run owns its own worktree under .workflow/local/runs/<run-id>/worktree"
+  "prepare_run remains built in while task_type can declaratively influence it"
+  "before_prepare_run is the only extension point and may return limited fields only"
+  "agent_home remains opaque at toolchain level"],
+ :installed-at "2026-04-22T00:58:48.579331034Z",
+ :target-root
+ "/home/mikewong/proj/main/vibe-flow/preproject_stage3_definition_externalization/sample_target",
+ :workflow-state-root
+ "/home/mikewong/proj/main/vibe-flow/preproject_stage3_definition_externalization/sample_target/.workflow",
+ :toolchain-root
+ "/home/mikewong/proj/main/vibe-flow/preproject_stage3_definition_externalization/toolchain",
+ :target-layout
+ {:state-root
+  "/home/mikewong/proj/main/vibe-flow/preproject_stage3_definition_externalization/sample_target/.workflow",
+  :durable-root
+  "/home/mikewong/proj/main/vibe-flow/preproject_stage3_definition_externalization/sample_target/.workflow/state",
+  :definitions-root
+  "/home/mikewong/proj/main/vibe-flow/preproject_stage3_definition_externalization/sample_target/.workflow/state/definitions",
+  :domain-root
+  "/home/mikewong/proj/main/vibe-flow/preproject_stage3_definition_externalization/sample_target/.workflow/state/domain",
+  :task-types-root
+  "/home/mikewong/proj/main/vibe-flow/preproject_stage3_definition_externalization/sample_target/.workflow/state/definitions/task_types",
+  :tasks-root
+  "/home/mikewong/proj/main/vibe-flow/preproject_stage3_definition_externalization/sample_target/.workflow/state/domain/tasks",
+  :mgr-runs-root
+  "/home/mikewong/proj/main/vibe-flow/preproject_stage3_definition_externalization/sample_target/.workflow/local/mgr_runs",
+  :collections-root
+  "/home/mikewong/proj/main/vibe-flow/preproject_stage3_definition_externalization/sample_target/.workflow/state/domain/collections",
+  :agent-homes-root
+  "/home/mikewong/proj/main/vibe-flow/preproject_stage3_definition_externalization/sample_target/.workflow/local/agent_homes",
+  :local-root
+  "/home/mikewong/proj/main/vibe-flow/preproject_stage3_definition_externalization/sample_target/.workflow/local",
+  :target-root
+  "/home/mikewong/proj/main/vibe-flow/preproject_stage3_definition_externalization/sample_target",
+  :registries-root
+  "/home/mikewong/proj/main/vibe-flow/preproject_stage3_definition_externalization/sample_target/.workflow/state/system/registries",
+  :system-root
+  "/home/mikewong/proj/main/vibe-flow/preproject_stage3_definition_externalization/sample_target/.workflow/state/system",
+  :runs-root
+  "/home/mikewong/proj/main/vibe-flow/preproject_stage3_definition_externalization/sample_target/.workflow/local/runs"},
+ :spike-version 3,
+ :launcher
+ {:default :mock, :supported [:mock :codex], :codex-command "codex"}}

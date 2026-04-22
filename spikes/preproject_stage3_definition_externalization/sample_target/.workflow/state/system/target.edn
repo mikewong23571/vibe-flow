@@ -1,0 +1,8 @@
+{:target-root
+ "/home/mikewong/proj/main/vibe-flow/preproject_stage3_definition_externalization/sample_target",
+ :repo-kind :git,
+ :installed-at "2026-04-22T00:58:48.611329356Z",
+ :current-branch "main",
+ :current-head "528d5149acb46d5cbdcab1308ed5bff8f6e579da",
+ :workflow-state-root
+ "/home/mikewong/proj/main/vibe-flow/preproject_stage3_definition_externalization/sample_target/.workflow"}

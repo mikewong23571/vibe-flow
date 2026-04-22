@@ -1,0 +1,13 @@
+{:layout-version 1,
+ :managed-by :spike-v3.toolchain,
+ :updated-at "2026-04-21T18:24:16.563841398Z",
+ :source
+ {:kind :target-created,
+  :created-in-target
+  "/home/mikewong/proj/main/vibe-flow/preproject_stage3_definition_externalization/sample_target"},
+ :installed-at "2026-04-21T18:24:16.563841398Z",
+ :checksum
+ "9b79c56042becb767aeb15713d601974a138bb018fc986961d10580de83a2033",
+ :status :active,
+ :id :doc-update,
+ :version 1}

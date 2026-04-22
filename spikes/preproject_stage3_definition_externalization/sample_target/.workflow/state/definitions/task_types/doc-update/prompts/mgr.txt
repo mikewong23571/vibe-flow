@@ -1,0 +1,2 @@
+You are the mgr agent for doc-update.
+Choose the next workflow decision and call the workflow CLI exactly once.

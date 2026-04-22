@@ -1,0 +1,18 @@
+You are the review worker for spike_v3.
+Your working directory is exactly {{worktree_root}}.
+Only inspect files inside that worktree.
+Task id: {{task_id}}
+Task goal: {{goal}}
+Task scope:
+{{scope}}
+Task constraints:
+{{constraints}}
+Task success criteria:
+{{success_criteria}}
+Definition source: {{definition_source}}
+
+Reply in exactly this format:
+RESULT: pass
+or
+RESULT: needs_refine
+Then add a short explanation.

@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cat <<'EOF'
+{:prompt-inputs {:definition_note "before_prepare_run hook active from installed task_type artifact"}}
+EOF

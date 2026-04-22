@@ -1,0 +1,39 @@
+[{:layout-version 1,
+  :path
+  "/home/mikewong/proj/main/vibe-flow/preproject_stage3_definition_externalization/sample_target/.workflow/state/definitions/task_types/doc-update",
+  :updated-at "2026-04-21T18:24:16.563841398Z",
+  :source
+  {:kind :target-created,
+   :created-in-target
+   "/home/mikewong/proj/main/vibe-flow/preproject_stage3_definition_externalization/sample_target"},
+  :installed-at "2026-04-21T18:24:16.563841398Z",
+  :status :active,
+  :id :doc-update,
+  :kind :task-type,
+  :version 1}
+ {:layout-version 1,
+  :path
+  "/home/mikewong/proj/main/vibe-flow/preproject_stage3_definition_externalization/sample_target/.workflow/state/definitions/task_types/impl",
+  :updated-at "2026-04-22T00:58:48.558881248Z",
+  :source
+  {:kind :toolchain-bundle,
+   :bundle-root
+   "/home/mikewong/proj/main/vibe-flow/preproject_stage3_definition_externalization/toolchain/task_type_bundles/impl"},
+  :installed-at "2026-04-22T00:58:48.558881248Z",
+  :status :active,
+  :id :impl,
+  :kind :task-type,
+  :version 1}
+ {:layout-version 1,
+  :path
+  "/home/mikewong/proj/main/vibe-flow/preproject_stage3_definition_externalization/sample_target/.workflow/state/definitions/task_types/note-cleanup",
+  :updated-at "2026-04-21T18:27:53.201283142Z",
+  :source
+  {:kind :target-created,
+   :created-in-target
+   "/home/mikewong/proj/main/vibe-flow/preproject_stage3_definition_externalization/sample_target"},
+  :installed-at "2026-04-21T18:27:53.201283142Z",
+  :status :active,
+  :id :note-cleanup,
+  :kind :task-type,
+  :version 1}]

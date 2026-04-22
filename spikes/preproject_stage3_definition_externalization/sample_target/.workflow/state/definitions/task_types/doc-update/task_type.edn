@@ -1,0 +1,22 @@
+{:task-type :doc-update,
+ :mgr-home :mgr_codex,
+ :workers
+ {:todo :impl, :awaiting-review :review, :awaiting-refine :refine},
+ :worker-homes
+ {:mgr :mgr_codex,
+  :impl :impl_codex,
+  :review :review_codex,
+  :refine :refine_codex},
+ :prompts
+ {:mgr "prompts/mgr.txt",
+  :impl "prompts/impl.txt",
+  :review "prompts/review.txt",
+  :refine "prompts/refine.txt"},
+ :task-schema
+ {:required [:goal :scope :constraints :success-criteria]},
+ :prepare-run
+ {:input-head {:task-field :repo-head, :fallback :current-head},
+  :worktree-strategy :git-worktree,
+  :prompt-inputs
+  {:latest_review
+   {:task-field :latest-review-output, :default "none"}}}}

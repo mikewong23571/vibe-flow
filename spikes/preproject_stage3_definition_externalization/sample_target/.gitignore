@@ -1,0 +1,5 @@
+# spike_v2 install manages a dedicated .workflow block below.
+
+# >>> spike_v3 workflow >>>
+/.workflow/local/
+# <<< spike_v3 workflow <<<

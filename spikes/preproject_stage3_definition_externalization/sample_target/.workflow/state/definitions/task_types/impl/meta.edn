@@ -1,0 +1,13 @@
+{:layout-version 1,
+ :managed-by :spike-v3.toolchain,
+ :updated-at "2026-04-22T00:58:48.558881248Z",
+ :source
+ {:kind :toolchain-bundle,
+  :bundle-root
+  "/home/mikewong/proj/main/vibe-flow/preproject_stage3_definition_externalization/toolchain/task_type_bundles/impl"},
+ :installed-at "2026-04-22T00:58:48.558881248Z",
+ :checksum
+ "ba1c35a2124394fbec5d67ef1850eef78215a0e33c083a26a8ca6b2aa5122d46",
+ :status :active,
+ :id :impl,
+ :version 1}

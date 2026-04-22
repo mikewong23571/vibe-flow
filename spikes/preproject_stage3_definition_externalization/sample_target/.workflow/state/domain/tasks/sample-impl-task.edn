@@ -1,0 +1,36 @@
+{:updated-at "2026-04-22T01:00:30.894634875Z",
+ :constraints
+ ["Use the smallest concrete change that can pass review."
+  "Keep the workflow control path unchanged: mgr -> workflow CLI -> toolchain."
+  "Assume task_type definitions and prompts are already installed artifacts."],
+ :latest-worktree
+ "/home/mikewong/proj/main/vibe-flow/preproject_stage3_definition_externalization/sample_target/.workflow/local/runs/26b26b8d-e63f-4432-ad25-09c8b4b7391b/worktree",
+ :latest-mgr-run "937e46b1-3629-4d50-b1dc-dc4c454c5615",
+ :latest-review-output
+ "RESULT: pass\n\n`feature.txt` is the only file changed, and it adds both the implementation note for externalized `task_type` definitions and the follow-up refinement preserving `mgr -> workflow CLI -> toolchain`, so the task stays within scope and satisfies the review criteria.",
+ :stage :done,
+ :collection-id "sample-impl-collection",
+ :repo-head "5273792d636947d4ef3cb4f1eb0274e8900fa5aa",
+ :success-criteria
+ ["feature.txt contains an implementation change and a follow-up refinement."
+  "review can conclude with RESULT: pass."
+  "runtime files remain under .workflow/local while definitions remain under .workflow/state."],
+ :goal
+ "Implement and refine a minimal change in feature.txt using externalized task_type definitions.",
+ :scope
+ ["Edit only feature.txt in the target repository."
+  "Do not modify workflow metadata or installed task_type artifacts."],
+ :latest-mgr-decision :review,
+ :latest-worker-output
+ "RESULT: pass\n\n`feature.txt` is the only file changed, and it adds both the implementation note for externalized `task_type` definitions and the follow-up refinement preserving `mgr -> workflow CLI -> toolchain`, so the task stays within scope and satisfies the review criteria.",
+ :task-type :impl,
+ :latest-mgr-output
+ "DECISION: review\nREASON: Task is awaiting review and the latest impl output matches the stage.",
+ :id "sample-impl-task",
+ :review-count 1,
+ :latest-run "26b26b8d-e63f-4432-ad25-09c8b4b7391b",
+ :latest-worker :review,
+ :created-at "2026-04-22T00:58:48.490795599Z",
+ :latest-worker-control :pass,
+ :mgr-count 2,
+ :run-count 2}
