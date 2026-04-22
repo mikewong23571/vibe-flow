@@ -2,6 +2,14 @@
 /.venv-pre-commit/
 /.codex
 /.tmp-codex-home/
+/target/
+/classes/
+/.clj-kondo/.cache/
+/.lsp/
+/.nrepl-port
+/.DS_Store
+/.idea/
+/.vscode/
 /spikes/**/.spike-v1/
 /spikes/**/.workflow/local/
 /spikes/**/runtime_repo/.git/
