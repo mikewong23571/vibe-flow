@@ -39,6 +39,22 @@
    :responsibility "Formal target install and reconcile placeholder."
    :split-axis "Split bootstrap, layout reconcile, and artifact install when the target substrate becomes concrete."}
 
+  "vibe-flow.platform.support.time"
+  {:layer :support-substrate
+   :volatility :low
+   :module-kind :foundation
+   :complexity :simple
+   :responsibility "Small time helpers for durable records."
+   :stability-role "Time formatting should remain a tiny reusable substrate."}
+
+  "vibe-flow.platform.support.edn"
+  {:layer :support-substrate
+   :volatility :low
+   :module-kind :foundation
+   :complexity :simple
+   :responsibility "Small EDN read and write helpers."
+   :stability-role "EDN IO should remain a stable low-level substrate."}
+
   "vibe-flow.governance.rules"
   {:layer :governance
    :volatility :low
