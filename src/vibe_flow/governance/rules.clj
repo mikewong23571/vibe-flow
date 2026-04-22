@@ -68,6 +68,9 @@
   {:warn 7
    :error 11})
 
+(def empty-directory-whitelist
+  #{})
+
 (def rules
   {:project-layout
    {:intent "Keep a standard Clojure project skeleton so code, tooling, and governance all land in predictable places."
@@ -100,6 +103,10 @@
    :file-length
    {:intent "Keep single-file complexity bounded so modules stay readable and refactorable."
     :guidance "Split responsibilities inside the flagged source file, or extract subordinate helpers into a nearby namespace in the same source area."}
+
+   :empty-directory
+   {:intent "Keep the governed source tree structurally intentional instead of preserving placeholder directories with no owned content."
+    :guidance "Remove the empty directory, move real owned content into it, or explicitly whitelist the path in the governance rules if the exception is intentional."}
 
    :directory-size
    {:intent "Keep directory fan-out bounded so module families stay discoverable and extensible."

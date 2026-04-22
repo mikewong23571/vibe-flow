@@ -34,6 +34,10 @@
         :when (.isDirectory dir)]
     dir))
 
+(defn whitelisted-empty-directory? [dir]
+  (contains? rules/empty-directory-whitelist
+             (ns-inspect/normalize-path dir)))
+
 (defn line-count [file]
   (with-open [reader (io/reader file)]
     (count (line-seq reader))))
@@ -237,6 +241,25 @@
          [])))
    (clojure-source-files)))
 
+(defn empty-directory-issues []
+  (mapcat
+   (fn [dir]
+     (let [path (ns-inspect/normalize-path dir)
+           entries (list-visible-children dir)]
+       (cond
+         (whitelisted-empty-directory? dir)
+         []
+
+         (empty? entries)
+         [(issue :empty-directory
+                 :error
+                 path
+                 "Governed directories must not be empty unless explicitly whitelisted.")]
+
+         :else
+         [])))
+   (governed-directories)))
+
 (defn directory-size-issues []
   (mapcat
    (fn [dir]
@@ -270,6 +293,7 @@
         (sample-boundary-issues)
         (layer-dependency-issues)
         (file-length-issues)
+        (empty-directory-issues)
         (directory-size-issues)]
        (apply concat)
        (sort-by (juxt :severity :path :id))))
