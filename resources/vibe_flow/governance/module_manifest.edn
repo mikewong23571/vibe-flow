@@ -63,6 +63,46 @@
    :responsibility "Formal .workflow path and layout helpers."
    :stability-role "Workflow path layout should stay small and stable."}
 
+  "vibe-flow.platform.state.system-store"
+  {:layer :state-persistence
+   :volatility :low
+   :module-kind :store
+   :complexity :simple
+   :responsibility "Persistence helpers for install, target, and layout system models."
+   :stability-role "System model persistence should stay a thin durable store."}
+
+  "vibe-flow.platform.state.collection-store"
+  {:layer :state-persistence
+   :volatility :low
+   :module-kind :store
+   :complexity :simple
+   :responsibility "Persistence helpers for collection domain records."
+   :stability-role "Collection persistence should remain a thin durable store."}
+
+  "vibe-flow.platform.state.task-store"
+  {:layer :state-persistence
+   :volatility :low
+   :module-kind :store
+   :complexity :simple
+   :responsibility "Persistence helpers for task domain records."
+   :stability-role "Task persistence should remain a thin durable store."}
+
+  "vibe-flow.platform.state.run-store"
+  {:layer :state-persistence
+   :volatility :low
+   :module-kind :store
+   :complexity :simple
+   :responsibility "Persistence helpers for run runtime records."
+   :stability-role "Run persistence should remain a thin durable store."}
+
+  "vibe-flow.platform.state.mgr-run-store"
+  {:layer :state-persistence
+   :volatility :low
+   :module-kind :store
+   :complexity :simple
+   :responsibility "Persistence helpers for mgr_run runtime records."
+   :stability-role "mgr_run persistence should remain a thin durable store."}
+
   "vibe-flow.governance.rules"
   {:layer :governance
    :volatility :low
