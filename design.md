@@ -1,652 +1,395 @@
 # Task-Type Driven Coding Agent Toolchain Design
 
-## 1. 背景
+这份文档是当前 repo 的正式设计基线。
 
-当前 coding agent 的主流使用方式，仍然接近一次性 prompt 驱动：人类程序员描述目标、补充上下文、观察输出、继续追问、要求返工、手工判断是否完成。
+它不再记录早期探索过程，而是基于 `preproject_stage1_minimal_workflow`、`preproject_stage2_toolchain_target_boundary`、`preproject_stage3_definition_externalization` 已经验证出来的边界，收敛出当前系统应该如何被理解、如何继续实现。
 
-这个模式在单个任务上可用，但面对一批同类型任务时，会出现明显问题：
+旧版设计草稿已归档到：
 
-* 每个 agent 被塞入过多能力，工具、权限、上下文、判断空间过宽，导致行为发散。
-* 每个任务都依赖人工重新组织 prompt，过程繁琐且不可复用。
-* 同类任务的推进过程高度相似，但没有被沉淀成可复用的任务协议。
-* 如果用传统代码框架实现所有状态调度、异常处理、返工策略和任务编排，系统会快速膨胀成复杂 workflow engine。
-* coding agent 的工作产物非常动态，可能是 diff、commit、未提交代码、一段说明、一段实现代码、一次文件修改、一次测试运行，不能假设所有任务都有固定结构化制品。
+* [design.deprecated.md](/home/mikewong/proj/main/vibe-flow/docs/archives/design.deprecated.md)
+* [architecture.deprecated.md](/home/mikewong/proj/main/vibe-flow/docs/archives/architecture.deprecated.md)
+* [refine.deprecated.md](/home/mikewong/proj/main/vibe-flow/docs/archives/refine.deprecated.md)
 
-因此，这个工具链要解决的问题不是“让 agent 更聪明”，也不是“替代人类软件工程流程”，而是：
+## 1. 设计目标
 
-**把人类程序员已有的 vibe coding 工作流，提升为可批量推进、可复用、可中断恢复的 agentic task workflow。**
-
-本工具链不发明新的研发流程。它只把人类已经能用 coding agent 半自动完成的工作，抽象成可重复调用的 task_type、collection、mgr、worker 和 run。
-
-如果某类工作原本就无法通过 coding agent 作为语义胶水完成自动化，那么工具链级别不会替它承载复杂性。
-
----
-
-## 2. 设计定位
-
-本系统是 **coding agent workflow toolchain**，不是企业级工作流平台。
-
-它的定位是：
+系统目标不是构建一个通用 workflow engine，而是提供一个足够薄、但结构稳定的：
 
 ```text
-用最小框架承载任务边界、状态流转和 agent 调度；
-用 mgr agent 作为编排胶水，避免在框架层硬编码大量 task_type 专属逻辑；
-用 worker agent 执行具体任务；
-用 task_type 沉淀同类任务的推进方式。
+task-type driven coding agent toolchain
 ```
 
-本系统不追求：
+它要解决的问题是：
 
-* 高性能调度
-* 分布式执行
-* 强一致事务
-* 企业权限模型
-* 完整可验证工作流
-* 强结构化 artifact schema
-* 替代 CI/CD
-* 替代人类 review
-* 替代软件工程管理系统
+* 把一批同类型 coding tasks 组织成可重复推进的 workflow
+* 把定义层从代码常量中收敛出来
+* 把 runtime 执行和 durable state 正式落到 target repo 中
+* 让 mgr 和 worker 通过统一控制面推进任务，而不把系统做成大平台
 
-本系统追求：
+系统追求：
 
+* 清晰边界
 * 低 ceremony
-* 低框架复杂度
-* task_type 可复用
-* agent_home 可替换
-* mgr 编排层足够薄
-* worker 执行足够自由
-* 适合个人或小团队增强 coding agent 工作流
+* 可恢复
+* 可扩展 task_type
+* 可替换 agent runtime
+* target 内状态可管理
 
----
+系统不追求：
 
-## 3. 高层设计原则
+* 通用工作流平台
+* 企业级治理平台
+* 强结构化 artifact schema
+* 替代 CI/CD 或项目管理系统
 
-### 3.1 工具链优先，不做平台
+## 2. 最外层边界
 
-系统必须保持工具链形态。
-
-工具链只提供足够的抽象，让用户把一批相似 coding tasks 交给 agent 持续推进。它不承担企业应用系统该承担的完整治理、权限、审计、审批、强校验和复杂可视化。
-
-设计上必须避免把系统做成通用 workflow engine。
-
----
-
-### 3.2 框架层做薄，mgr 作为编排胶水
-
-框架不负责穷尽所有 task_type 的状态调度逻辑。
-
-不同 task_type 的推进方式差异很大。如果在框架层为每种任务实现完整调度逻辑，会导致系统复杂度快速失控。
-
-因此，唯一设计是：
+当前正式边界固定为：
 
 ```text
-Framework = thin substrate
-Mgr Agent = workflow router
-Worker Agent = task executor
+System
+  = Toolchain
+  + Target
 ```
 
-框架只提供：
+更具体地说：
 
-* task_type
-* collection
-* task
-* run
-* agent_home
-* worker invocation
-* state transition record
-* error exit
+* `toolchain` 是 workflow control plane 的实现
+* `target` 是被操作的 git repository
+* `target` 同时也是 workflow installation target 和 runtime target
 
-mgr 负责根据 task_type 的编排 prompt 和当前 task 状态，选择下一个 worker 并推动任务流转。
+这条边界已经不再是目录习惯，而是正式设计约束。
 
----
+## 3. 核心判断
 
-### 3.3 mgr 不做裁决，只做流转
-
-mgr 不是 reviewer。
-
-mgr 不负责判断代码是否正确，不负责解释实现质量，不负责决定一个复杂语义结果是否满足需求。
-
-mgr 的职责只有一个：
-
-**根据 task_type 定义的流程和 worker 的执行结果，推动 task 状态流转。**
-
-例如：
+基于 `preproject_stage3_definition_externalization`，系统当前最重要的设计判断是：
 
 ```text
-todo -> impl_worker
-impl_worker completed -> review_worker
-review_worker completed -> refine_worker or done
-refine_worker completed -> review_worker
-worker error -> task error
-```
+definition layer
+  = externalized artifacts installed into target
 
-mgr 可以是 coding agent，但它作为 agent 的价值不在于语义裁决，而在于用自然语言规则完成轻量编排，避免框架硬编码复杂状态机。
-
----
-
-### 3.4 worker 完成即 task 阶段完成
-
-系统层不解释 worker 的产物。
-
-在工具链级别，worker 执行完毕就代表当前阶段完成。系统不要求 worker 必须返回固定结构化 artifact，也不在框架层解析 worker 产物来判断任务是否完成。
-
-唯一允许的异常出口是：
-
-```text
-worker 调用 error tool
+control plane
+  = built into toolchain
 ```
 
 也就是说：
 
-* worker 正常结束：阶段完成，mgr 继续流转。
-* worker 调用 error tool：阶段失败，task 进入 error 状态或由 mgr 按 task_type 规则处理。
+* `task_type`、prompt、最小 prepare-run 声明应从代码内建收敛到 target 内已安装 artifact
+* workflow 主干仍由 toolchain 内建收口
+* mgr 继续通过 workflow CLI 把控制权交回 toolchain
 
-除此之外，框架不做额外判定。
-
----
-
-### 3.5 worker 产物默认动态，不做工具链级强结构化
-
-coding worker 的产物高度动态。
-
-它可能是：
-
-* 一段实现代码
-* 一组文件修改
-* 未提交代码
-* 一个 commit
-* 一段 review comment
-* 一段失败说明
-* 一次测试输出
-* 一个 patch
-* 一个新的任务建议
-
-工具链级别不强制所有产物结构化。
-
-如果某个 task_type 需要结构化输出，应该在该 task_type 的编排 prompt 或 worker prompt 中明确要求，而不是在工具链核心模型中强制。
-
-原则是：
-
-```text
-结构化是 task_type 的约束，不是工具链的全局约束。
-```
-
----
-
-### 3.6 task_type 是复用单位
-
-系统的核心复用单位不是 task，而是 task_type。
-
-一个 task_type 描述一类任务如何推进。
-
-例如：
-
-* impl
-* bugfix
-* code-review
-* refactor
-* doc-update
-* test-generation
-* migration
-
-同一个 task_type 下可以有多个 collection，每个 collection 中可以有多个 task。
-
-系统关注的是：
-
-```text
-很多同类型 task 的推进过程高度类似，应该复用同一套 task_type workflow。
-```
-
----
-
-### 3.7 不替代人类工作流，只增强已有工作流
-
-本工具链不是为了重新定义软件研发流程。
-
-它假设用户已经知道如何使用 coding agent 完成某类工作，只是当前过程太手工、太一次性、太依赖聊天上下文。
-
-工具链要做的是把这类已存在的人工 agent workflow 沉淀下来。
-
-如果某个工作流无法通过 coding agent 这种语义胶水合理自动化，工具链不负责把它变得可自动化。
-
----
+这条判断是当前系统的主轴。
 
 ## 4. 核心模型
 
-唯一核心模型如下：
+当前正式模型分成 4 类。
 
-```text
-agent_home
-  -> mgr
-  -> worker
+### 4.1 System Models
 
-task_type
-  -> collection
-  -> task
-  -> run
-```
+用于描述 workflow 在 target 上的安装与治理状态。
 
-系统关系：
+最小包括：
 
-```mermaid
-flowchart TB
-  AH[agent_home]
-  TT[task_type]
-  C[collection]
-  T[task]
-  M[mgr]
-  W[worker]
-  R[run]
-  E[error tool]
+* `install`
+* `target`
+* `layout`
+* `registry`
 
-  AH --> M
-  AH --> W
-  TT --> C
-  C --> T
-  TT --> M
-  M --> W
-  W --> R
-  R --> M
-  W --> E
-  E --> M
-  M --> T
-```
+### 4.2 Definition Models
 
-解释：
+用于描述可复用 workflow 定义层。
 
-* `agent_home` 定义 agent 的能力、工具、instruction 和运行环境。
-* `task_type` 定义同类任务的推进方式。
-* `collection` 是某个 task_type 下的一批任务。
-* `task` 是 collection 中的一个具体任务。
-* `mgr` 是某个 task_type 的编排 agent。
-* `worker` 是由 mgr 拉起的执行 agent。
-* `run` 是 worker 的一次执行记录。
-* `error tool` 是 worker 唯一失败出口。
+当前最小包括：
 
----
+* `task_type`
 
-## 5. 核心概念设计
+### 4.3 Domain Models
 
-### 5.1 agent_home
+用于描述被持续推进的业务对象。
 
-`agent_home` 是 agent runtime profile。
+当前最小包括：
 
-它定义 agent 如何运行，而不是定义业务任务本身。
+* `collection`
+* `task`
 
-它包含：
+### 4.4 Runtime Models
 
-* agent instruction
-* 可用工具
-* 权限边界
-* 工作目录约定
-* 上下文读取方式
-* 输出风格要求
+用于描述运行态对象。
 
-系统允许存在多个 agent_home。
+当前最小包括：
 
-mgr 和 worker 都从 agent_home 实例化。
+* `run`
+* `mgr_run`
+* worktree
+* installed `agent_home`
 
-唯一设计：
+## 5. 关键对象语义
 
-```text
-mgr 使用 mgr_home
-worker 使用 worker_home
-不同 task_type 可以绑定不同 mgr_home 和 worker_home
-```
+### 5.1 `task_type`
 
-目的：
-
-```text
-通过 agent_home 收敛 agent 能力，避免一个 agent 拥有过宽工具和过宽责任。
-```
-
----
-
-### 5.2 task_type
-
-`task_type` 是同类任务的推进协议。
-
-它不只是分类标签。
+`task_type` 是协议对象，不是标签。
 
 它定义：
 
-* 这个任务类型使用哪个 mgr
-* mgr 可以调用哪些 worker
-* worker 的调用顺序
-* worker 正常结束后任务如何流转
-* worker 调用 error tool 后任务如何处理
-* 需要传递给 worker 的上下文
+* mgr / worker home 绑定
+* worker routing
+* prompt 来源
+* task definition schema
+* prepare-run 策略
 
-`task_type` 不定义全局 artifact schema。
-
-如果该 task_type 需要某个 worker 产出结构化结果，要求写在该 task_type 的 prompt 中。
-
-唯一设计：
+当前正式理解是：
 
 ```text
-task_type 负责 workflow prompt，不负责框架级强 schema。
+task_type
+  = definition model
+  = managed package
+  = logical definition + metadata + layout contract
 ```
 
----
+### 5.2 `collection`
 
-### 5.3 collection
+`collection` 是同类任务池，而不是通用项目管理容器。
 
-`collection` 是某个 task_type 下的一批同类任务。
+它把一组同 `task_type` 的任务聚合起来，作为 inspect、批量创建和未来调度扩展的自然边界。
 
-它不是通用项目管理列表，而是同类任务的状态池。
+### 5.3 `task`
 
-例如：
+`task` 是具体推进单元，也是 workflow state machine instance。
+
+当前最小 durable schema 是：
+
+* `goal`
+* `scope`
+* `constraints`
+* `success-criteria`
+
+这部分是 task 自己的业务定义，不应再和 task_type 协议或 run 派生状态混在一起。
+
+### 5.4 `run`
+
+`run` 不只是执行记录，而是 runtime container。
+
+它最少应拥有：
+
+* worker
+* launcher
+* input head
+* output head
+* worktree
+* prompt
+* output
+* prepare metadata
+* worker home
+
+当前系统也已经开始把它当作：
 
 ```text
-task_type: impl
-collection: user-auth-feature
+candidate change carrier
 ```
 
-其中可以包含：
+### 5.5 `mgr_run`
 
-* 实现 password login
-* 实现 refresh token
-* 实现 logout
-* 补充 auth tests
-* 更新 auth docs
+`mgr_run` 记录 mgr 一次具体决策与其 runtime 上下文。
 
-collection 的价值是让 mgr 可以持续推进一批相似任务，而不是只处理单个 task。
+它和 `run` 分开保留，是为了维持：
 
-唯一设计：
+* mgr 决策轨迹
+* worker 执行轨迹
+
+之间的清晰边界。
+
+## 6. Target 内状态布局
+
+当前正式布局固定为：
 
 ```text
-mgr 每次围绕 collection 推进 task，而不是围绕孤立 task 工作。
+target/
+  .git/
+  source tree...
+  .workflow/
+    state/
+      system/
+        install.edn
+        target.edn
+        layout.edn
+        registries/
+      definitions/
+        task_types/
+          <task-type-id>/
+            task_type.edn
+            meta.edn
+            prompts/
+            hooks/
+      domain/
+        collections/
+        tasks/
+    local/
+      runs/
+      mgr_runs/
+      agent_homes/
 ```
 
----
+这层布局的正式含义是：
 
-### 5.4 task
+* `system/` 是工具链自维护模型
+* `definitions/` 是 target-managed definition artifacts
+* `domain/` 是 durable business state
+* `local/` 是本地 runtime state
 
-`task` 是 collection 中的具体推进单元。
+## 7. Definition Layer
 
-它只需要表达：
+定义层当前以 target 内已安装 artifact 为运行时 source of truth。
 
-* 要做什么
-* 属于哪个 collection
-* 当前处于哪个流程位置
-* 最近一次 run 的结果
-* 是否进入 error
+### 7.1 `task_type` package contract
 
-task 不承担复杂制品模型。
-
-task 的完成不由框架分析产物决定，而由 task_type workflow 推进到完成态决定。
-
----
-
-### 5.5 mgr
-
-`mgr` 是 task_type 专属编排 agent。
-
-mgr 的唯一职责：
+最小 package contract 为：
 
 ```text
-根据 task_type workflow，推动 collection 中的 task 进入下一个 worker 或完成状态。
+definitions/task_types/<task-type-id>/
+  task_type.edn
+  meta.edn
+  prompts/
+    mgr.txt
+    impl.txt
+    review.txt
+    refine.txt
+  hooks/
+    before_prepare_run
 ```
 
-mgr 不做：
+其中：
 
-* 代码质量裁决
-* 需求正确性裁决
-* 测试结果语义解释
-* diff 深度审查
-* artifact schema 校验
-* 企业级流程治理
+* `task_type.edn` 表达协议定义
+* `meta.edn` 表达管理信息
+* `prompts/` 是 prompt artifact
+* `hooks/` 是最小扩展点目录
 
-mgr 可以读 worker 的输出，但不是为了做复杂裁决，而是为了完成轻量编排。
+### 7.2 prepare-run 边界
 
-例如 review worker 可以明确写出：
+`prepare_run` 本体保持 toolchain 内建收口。
+
+当前允许 `task_type` 通过声明式定义影响：
+
+* input head
+* worker home
+* prompt inputs
+* worktree strategy
+
+当前唯一扩展点是：
+
+* `before_prepare_run`
+
+并且 `before_prepare_run` 只能返回有限字段，不允许直接 materialize run 或接管 workflow。
+
+## 8. Workflow Control
+
+当前正式控制链固定为：
 
 ```text
-review passed
+mgr
+  -> workflow CLI
+  -> toolchain regains control
+  -> prepare run
+  -> launch worker
+  -> persist run
+  -> update task
 ```
 
-或者：
+这条控制链表达下面几个正式边界：
+
+* `mgr` 是独立 agent
+* `mgr` 不直接拿 worker launcher 细节
+* toolchain 负责 workflow 控制面和状态落盘
+* worker 只负责本轮执行
+
+## 9. Runtime Integration
+
+toolchain 不解释 agent runtime 内部能力模型，但负责稳定绑定 runtime 所需输入。
+
+当前 runtime integration 至少负责：
+
+* launcher contract
+* `agent_home` 绑定
+* prompt materialization
+* output 落盘
+* runtime metadata 记录
+
+当前已验证的 launcher 包括：
+
+* `mock`
+* `codex`
+
+## 10. Candidate Change Boundary
+
+当前系统已经能生成 candidate change，但尚未把 candidate integration 作为正式主线实现。
+
+当前正式边界是：
+
+* worker 在 run worktree 中产出 candidate change
+* task 记录新的 `repo-head`
+* review 可以基于 candidate 给出 `pass`
+* workflow 当前不自动把结果落回 target 主工作树
+
+因此，当前系统的语义是：
 
 ```text
-review failed, needs refine
+workflow
+  = candidate producer
+
+not yet
+  = automatic integration engine
 ```
 
-mgr 根据这个结果流转任务。
+后续如果推进 integration，需要单独定义：
 
-如果需要更严格的结构化结果，由 task_type prompt 要求 review worker 输出指定格式，而不是由工具链核心强制。
+* candidate identity
+* integration policy
+* integration actor
+* integration failure handling
 
----
+## 11. Toolchain 的正式职责
 
-### 5.6 worker
+当前正式职责应固定为：
 
-`worker` 是实际执行者。
+* 校验 target 是 git repository
+* 安装 workflow 所需状态到 target
+* 维护 target layout、metadata、registry
+* 读取并校验 definition artifacts
+* 推进 collection/task/run 状态
+* 调用 mgr runtime
+* 调用 worker runtime
+* 执行 prepare-run
+* 管理 run runtime assets
+* 把 workflow 结果持久化到 target
 
-worker 可以是：
+它不负责：
 
-* impl worker
-* review worker
-* refine worker
-* test worker
-* doc worker
-* migration worker
+* 定义 agent runtime 内部能力语义
+* 替代项目管理系统
+* 替代 CI/CD
+* 提供通用工作流平台抽象
 
-worker 的工作方式由其 agent_home 和 task_type prompt 决定。
+## 12. 当前后续实现方向
 
-工具链不限制 worker 的正常产物形态。
+基于当前设计，正式版本应优先补齐下面几类能力：
 
-唯一硬规则：
+1. `task_type` lifecycle
+   包括 `update / deprecate / remove-if-safe / validate / reconcile`
+2. target model management
+   把 `system / definitions / domain / runtime` 的管理面做正式
+3. workflow recovery
+   支持 unfinished run / mgr_run 的 inspect、retry、gc、recover
+4. candidate lifecycle
+   把 candidate change 的 record、summary、integration policy 做正式
+5. product surface
+   把当前 spike CLI 收敛成更稳定的正式 control surface
+
+## 13. 一句话总结
+
+当前正式设计可以压缩成一句话：
 
 ```text
-worker 如果无法完成当前阶段，必须调用 error tool。
+在一个 target git repo 中，
+把 definition layer 作为 installed artifacts 外置，
+把 workflow control plane 保持为 toolchain 内建，
+用 task_type 驱动一组 coding agent tasks 的持续推进。
 ```
-
-这使工具链可以用一个非常简单的机制处理失败：
-
-* 没有 error：阶段完成。
-* 有 error：阶段失败。
-
----
-
-### 5.7 run
-
-`run` 是 worker 的一次执行记录。
-
-它记录：
-
-* 哪个 task
-* 哪个 worker
-* 何时开始
-* 何时结束
-* 是否调用 error tool
-* worker 输出位置
-
-run 不要求产物结构化。
-
-run 的目的不是提供强验证，而是提供基本可追踪性。
-
----
-
-### 5.8 error tool
-
-`error tool` 是 worker 唯一失败出口。
-
-worker 正常结束时，系统认为当前阶段完成。
-
-worker 无法完成时，必须显式调用 error tool。
-
-error tool 至少表达：
-
-* 当前 worker 无法完成
-* 原因说明
-* 建议下一步，可选
-
-工具链只关心是否 error，不对 error 做复杂分类。
-
----
-
-## 6. 标准任务流
-
-以 `impl` task_type 为例，唯一标准流如下：
-
-```text
-task created
-  -> mgr starts impl worker
-  -> impl worker finishes
-  -> mgr starts review worker
-  -> review worker finishes
-  -> if review says pass: task done
-  -> if review says needs refine: mgr starts refine worker
-  -> refine worker finishes
-  -> mgr starts review worker again
-  -> repeat until done or worker calls error tool
-```
-
-图示：
-
-```mermaid
-flowchart TB
-  A[task created]
-  B[mgr starts impl worker]
-  C[impl worker finishes]
-  D[mgr starts review worker]
-  E[review worker finishes]
-  F{review result}
-  G[task done]
-  H[mgr starts refine worker]
-  I[refine worker finishes]
-  X[worker calls error tool]
-  Z[task error]
-
-  A --> B
-  B --> C
-  C --> D
-  D --> E
-  E --> F
-  F -->|pass| G
-  F -->|needs refine| H
-  H --> I
-  I --> D
-
-  B --> X
-  D --> X
-  H --> X
-  X --> Z
-```
-
-这里的重点是：
-
-* mgr 不判断实现质量。
-* review worker 负责表达 review 结果。
-* refine worker 接收原始任务、已有产物、review 记录继续修正。
-* worker 正常结束即阶段完成。
-* 失败只通过 error tool 表达。
-
----
-
-## 7. 编排 prompt 的地位
-
-本系统把复杂性放在 task_type 的编排 prompt 中，而不是放在工具链框架中。
-
-对于不同 task_type，可以通过 prompt 指定：
-
-* mgr 如何选择 worker
-* worker 之间传递哪些上下文
-* review worker 如何表达 pass / needs refine
-* refine worker 接收哪些输入
-* 何时停止迭代
-* 何时调用 error tool
-
-但这些要求属于 task_type 级别，不进入工具链核心模型。
-
-唯一原则：
-
-```text
-工具链只提供运行容器；
-task_type prompt 定义编排语义；
-worker prompt 定义执行语义。
-```
-
----
-
-## 8. 工具链边界
-
-本工具链不会替用户保证：
-
-* 代码一定正确
-* review 一定准确
-* 任务拆分一定合理
-* 所有 workflow 都能自动化
-* worker 输出一定结构化
-* agent 不会误判
-* 多轮 refine 一定收敛
-
-这些不是工具链级别应该承担的职责。
-
-工具链只保证：
-
-* task_type 可以复用
-* collection 可以批量推进
-* mgr 可以调度 worker
-* worker 可以正常结束或显式报错
-* run 可以被记录
-* task 可以根据 workflow 流转
-
----
-
-## 9. 与过度设计的分界
-
-以下设计不进入核心工具链：
-
-* 全局 artifact schema
-* 强制 evidence model
-* 复杂 review object
-* 通用 DAG workflow engine
-* 多级审批
-* 复杂状态机 DSL
-* 强一致任务锁
-* 企业级审计
-* 复杂权限系统
-* worker 输出解析框架
-
-原因：
-
-这些设计会把工具链推向企业平台，偏离最初目标。
-
-本系统要增强的是人类程序员的 vibe coding 工作流，不是替代完整软件工程平台。
-
----
-
-## 10. 设计结论
-
-最终设计唯一收敛为：
-
-```text
-一个 task_type-driven coding agent workflow toolchain。
-```
-
-它的核心是：
-
-```text
-task_type 复用同类任务推进方式
-collection 承载一批同类任务
-mgr agent 做轻量编排胶水
-worker agent 做具体执行
-run 记录一次 worker 执行
-error tool 作为唯一失败出口
-```
-
-最重要的设计判断是：
-
-```text
-mgr 是 coding agent，但 mgr 不做复杂裁决；
-mgr 的存在是为了让编排层变薄，避免框架硬编码大量 task_type 状态调度逻辑。
-```
-
-worker 的产物默认动态，不在工具链级别强结构化。
-
-如果需要结构化，应该由 task_type prompt 或 worker prompt 指定。
-
-本工具链只做一件事：
-
-**把人类已经能通过 coding agent 推进的同类任务流程，沉淀为可复用、可批量推进的轻量 agent workflow。**
-

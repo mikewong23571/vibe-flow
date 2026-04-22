@@ -1,389 +1,320 @@
 # Task-Type Driven Coding Agent Toolchain Architecture
 
-> 本文档基于 `design.md` 的设计理念，对系统架构进行图示化整理。
-> 它是“理解版架构图”，用于审阅设计是否表达准确，不替代正式规范。
+这份文档是当前 repo 的正式架构说明。
 
-## 1. 设计目标
+它建立在 [design.md](/home/mikewong/proj/main/vibe-flow/design.md) 的正式设计基线上，负责回答：
 
-系统的目标不是构建一个通用 workflow engine，而是提供一个足够薄的工具链，让一批同类型的 coding agent 任务可以被持续推进、复用和恢复。
+* 系统由哪些层构成
+* 它们之间如何依赖
+* 控制权如何流动
+* target 内状态如何组织
 
-核心判断：
+旧版探索性架构文档已归档到：
 
-* `task_type` 是复用单位
-* `collection` 是同类任务池
-* `task` 是具体推进单元
-* `mgr` 负责轻量编排
-* `worker` 负责具体执行
-* `run` 记录一次 worker 执行
-* `error tool` 是唯一显式失败出口
+* [architecture.deprecated.md](/home/mikewong/proj/main/vibe-flow/docs/archives/architecture.deprecated.md)
 
----
+## 1. System Boundary
 
-## 2. 系统总览
-
-```mermaid
-flowchart LR
-  U[User]
-  TT[Task Type]
-  C[Collection]
-  T[Task]
-  MHome[mgr_home]
-  WHome[worker_home]
-  M[mgr Agent]
-  W[worker Agent]
-  R[Run Record]
-  E[error tool]
-
-  U -->|create / inspect| C
-  TT -->|defines workflow| C
-  C -->|contains| T
-
-  MHome -->|instantiates| M
-  WHome -->|instantiates| W
-
-  TT -->|binds mgr_home and allowed workers| M
-  TT -->|defines worker order and routing rules| W
-
-  M -->|select next task and next worker| W
-  W -->|produces execution result| R
-  W -->|cannot continue| E
-  E -->|error recorded for routing| M
-  R -->|latest run result| M
-  M -->|updates task state| T
-  U -->|review status and outputs| T
-```
-
-这个总览表达的是：
-
-* 框架只承载任务对象、agent 实例化、worker 调用和 run 记录
-* `mgr` 不直接做实现工作，只做路由和状态推进
-* `worker` 既可以产出代码，也可以产出 review/refine/test/doc 结果
-* 成功路径依赖 worker 正常结束，失败路径依赖 `error tool`
-
----
-
-## 3. 分层架构
-
-```mermaid
-flowchart TB
-  subgraph L1[User Layer]
-    U1[User]
-    U2[Collection Inspection]
-    U3[Task Creation]
-  end
-
-  subgraph L2[Workflow Definition Layer]
-    T1[task_type]
-    T2[workflow prompt]
-    T3[worker prompt]
-    T4[allowed workers]
-    T5[routing rules]
-  end
-
-  subgraph L3[Runtime Profile Layer]
-    A1[mgr_home]
-    A2[worker_home]
-    A3[tools / permissions / instructions]
-  end
-
-  subgraph L4[Execution Layer]
-    M[mgr Agent]
-    W1[impl worker]
-    W2[review worker]
-    W3[refine worker]
-    W4[test/doc/... worker]
-  end
-
-  subgraph L5[State Layer]
-    C[collection]
-    K[task]
-    R[run]
-    X[error state]
-    D[done state]
-  end
-
-  U1 --> U2
-  U1 --> U3
-  U3 --> C
-  C --> K
-
-  T1 --> T2
-  T1 --> T3
-  T1 --> T4
-  T1 --> T5
-
-  A1 --> A3
-  A2 --> A3
-
-  T1 --> M
-  T4 --> W1
-  T4 --> W2
-  T4 --> W3
-  T4 --> W4
-
-  A1 --> M
-  A2 --> W1
-  A2 --> W2
-  A2 --> W3
-  A2 --> W4
-
-  M --> K
-  M --> W1
-  M --> W2
-  M --> W3
-  M --> W4
-
-  W1 --> R
-  W2 --> R
-  W3 --> R
-  W4 --> R
-
-  R --> K
-  M --> X
-  M --> D
-```
-
-分层含义：
-
-* `Workflow Definition Layer` 承载任务类型差异
-* `Runtime Profile Layer` 承载 agent 能力边界
-* `Execution Layer` 只负责推进和执行
-* `State Layer` 只负责记录和流转，不负责深度解释产物
-
----
-
-## 4. 核心对象关系
-
-```mermaid
-classDiagram
-  class TaskType {
-    +name
-    +mgr_home
-    +worker_home
-    +allowed_workers
-    +workflow_prompt
-    +routing_rules
-  }
-
-  class Collection {
-    +id
-    +task_type
-    +name
-    +status_pool
-  }
-
-  class Task {
-    +id
-    +collection_id
-    +goal
-    +current_stage
-    +latest_run
-    +state
-  }
-
-  class Run {
-    +id
-    +task_id
-    +worker_name
-    +started_at
-    +ended_at
-    +error_flag
-    +output_ref
-  }
-
-  class AgentHome {
-    +instruction
-    +tools
-    +permissions
-    +cwd_policy
-    +context_policy
-    +output_style
-  }
-
-  class MgrAgent
-  class WorkerAgent
-  class ErrorTool {
-    +reason
-    +next_step?
-  }
-
-  TaskType --> Collection : defines type for
-  Collection --> Task : contains
-  Task --> Run : has many
-  TaskType --> AgentHome : binds mgr_home / worker_home
-  AgentHome --> MgrAgent : instantiates
-  AgentHome --> WorkerAgent : instantiates
-  MgrAgent --> WorkerAgent : invokes
-  WorkerAgent --> Run : creates
-  WorkerAgent --> ErrorTool : may call
-```
-
-我对对象关系的理解是：
-
-* `TaskType` 是协议对象，不是纯标签
-* `Collection` 是调度上下文，不是通用项目管理容器
-* `Task` 是状态机实例
-* `Run` 是 task 上的一次 worker 执行事件
-* `AgentHome` 收敛 agent 能力，而不是承载业务语义
-
----
-
-## 5. 运行时交互图
-
-```mermaid
-sequenceDiagram
-  participant User
-  participant Collection
-  participant Mgr as mgr Agent
-  participant Worker as worker Agent
-  participant Run
-  participant Error as error tool
-
-  User->>Collection: create tasks under a task_type
-  Mgr->>Collection: inspect runnable tasks
-  Mgr->>Worker: start selected worker with task context
-
-  alt worker completes normally
-    Worker->>Run: write run record and output ref
-    Run-->>Mgr: latest run result
-    Mgr->>Collection: advance task to next stage or done
-  else worker cannot continue
-    Worker->>Error: emit failure reason
-    Error-->>Mgr: explicit failure signal
-    Mgr->>Collection: mark task error or route by task_type rule
-  end
-
-  Collection-->>User: updated task state and run history
-```
-
-这个运行时交互图体现两个关键点：
-
-* 框架识别的是“正常结束”与“显式失败”
-* `mgr` 读取结果是为了路由，不是为了充当代码质量裁判
-
----
-
-## 6. 标准 `impl` 任务流
-
-```mermaid
-flowchart TB
-  A[task created]
-  B[mgr selects task from collection]
-  C[mgr starts impl worker]
-  D[impl worker finishes]
-  E[mgr starts review worker]
-  F[review worker finishes]
-  G{review control signal}
-  H[task done]
-  I[mgr starts refine worker]
-  J[refine worker finishes]
-  X[worker calls error tool]
-  Z[task error]
-
-  A --> B
-  B --> C
-  C --> D
-  D --> E
-  E --> F
-  F --> G
-  G -->|pass| H
-  G -->|needs refine| I
-  I --> J
-  J --> E
-
-  C --> X
-  E --> X
-  I --> X
-  X --> Z
-```
-
-这个任务流对应的是文档中的标准示例：
-
-* `impl worker` 负责第一次实现
-* `review worker` 负责给出是否通过的控制信号
-* `refine worker` 基于 review 结果继续修正
-* 任何阶段都可以通过 `error tool` 终止正常推进
-
----
-
-## 7. 状态视角
-
-```mermaid
-stateDiagram-v2
-  [*] --> Todo
-  Todo --> InImpl : mgr starts impl worker
-  InImpl --> InReview : impl worker completed
-  InImpl --> Error : impl worker error
-
-  InReview --> Done : review says pass
-  InReview --> InRefine : review says needs refine
-  InReview --> Error : review worker error
-
-  InRefine --> InReview : refine worker completed
-  InRefine --> Error : refine worker error
-```
-
-这里的重点不是状态机复杂度，而是状态机足够薄：
-
-* 阶段流转由 `task_type` 决定
-* 状态记录由框架承载
-* 复杂判定不下沉到框架
-
----
-
-## 8. 责任边界图
-
-```mermaid
-flowchart LR
-  F[Framework]
-  M[mgr]
-  W[worker]
-  T[task_type prompt]
-
-  F --> F1[stores task, collection, run]
-  F --> F2[starts worker]
-  F --> F3[records state transitions]
-  F --> F4[recognizes normal end vs error]
-
-  M --> M1[select task]
-  M --> M2[select next worker]
-  M --> M3[route according to workflow]
-
-  W --> W1[implement]
-  W --> W2[review]
-  W --> W3[refine]
-  W --> W4[emit error when blocked]
-
-  T --> T1[define routing semantics]
-  T --> T2[define required context]
-  T --> T3[define control signal format]
-  T --> T4[define stopping conditions]
-```
-
-责任边界总结：
-
-* 框架不做 task_type 专属裁决
-* `mgr` 不做深度质量审查
-* `worker` 不负责全局编排
-* `task_type prompt` 承载大部分流程语义
-
----
-
-## 9. 需要你确认的推断
-
-以下内容是我基于 `design.md` 做的补充性理解，文档原文没有完全显式写死，审阅时建议重点确认：
-
-* `collection` 更像“调度上下文”，`task` 才是具体状态机实例
-* `run` 应当从属于 `task`，并记录本次由哪个 worker 执行
-* 工具链虽然不要求统一 artifact schema，但至少需要最小控制信号，例如 `pass` / `needs refine`
-* `mgr` 不做业务质量裁决，但会做协议级路由判断
-* `error tool` 是唯一显式失败出口，但 error 后是否直接终止，仍应由 `task_type` 决定
-
----
-
-## 10. 一句话架构结论
+当前正式系统边界固定为：
 
 ```text
-这是一个以 task_type 为协议中心、以 mgr 为轻量编排器、以 worker 为执行器、
-以 collection/task/run 为状态载体的薄型 coding agent workflow toolchain。
+System
+  = Toolchain
+  + Target
+```
+
+其中：
+
+* `toolchain` 是 workflow control plane 的实现
+* `target` 是被工作的 git repository
+* `target` 同时承载 workflow installation state 和 runtime state
+
+## 2. Architecture Summary
+
+当前系统可以压缩成下面这条链：
+
+```text
+definition package
+  -> installed into target
+  -> interpreted by toolchain
+  -> mgr decides next step
+  -> workflow regains control
+  -> run is prepared
+  -> worker is launched
+  -> run/task state is persisted
+```
+
+这条链的关键点是：
+
+* definition layer 已外置到 target
+* workflow control plane 仍内建在 toolchain
+* mgr 是独立 agent，但不接管 runtime orchestration
+
+## 3. Layering
+
+当前正式分层建议固定为：
+
+```text
+L1 Product Surface
+L2 Workflow Control
+L3 Definition / Model Management
+L4 Runtime Integration
+L5 State Persistence
+L6 Target Substrate
+L7 Support Substrate
+```
+
+### L1 Product Surface
+
+负责：
+
+* CLI
+* 未来可能的 API / TUI / Web surface
+
+当前对应：
+
+* root-level user docs
+* `spikes/preproject_stage3_definition_externalization/toolchain/src/spike_v3/toolchain.clj`
+
+### L2 Workflow Control
+
+负责：
+
+* 选择可推进 task
+* 调用 mgr
+* 接收 mgr 决策
+* 重新接管控制权
+* 推进 run / task lifecycle
+
+当前对应：
+
+* `spikes/preproject_stage3_definition_externalization/toolchain/src/spike_v3/core/`
+
+### L3 Definition / Model Management
+
+负责：
+
+* definition artifact load / resolve / interpret
+* target-managed model lifecycle
+* registry / meta / inspect / reconcile
+
+当前对应：
+
+* `spikes/preproject_stage3_definition_externalization/toolchain/src/spike_v3/definition/`
+* `spikes/preproject_stage3_definition_externalization/toolchain/src/spike_v3/management/`
+* `spikes/preproject_stage3_definition_externalization/toolchain/src/spike_v3/target/install.clj`
+
+### L4 Runtime Integration
+
+负责：
+
+* mgr runtime bridge
+* worker launcher adapter
+* prompt rendering
+* runtime binding with `agent_home`
+
+当前对应：
+
+* `spikes/preproject_stage3_definition_externalization/toolchain/src/spike_v3/agent/`
+* `spikes/preproject_stage3_definition_externalization/toolchain/src/spike_v3/state/run_store.clj`
+
+### L5 State Persistence
+
+负责：
+
+* collection/task/run/mgr_run record 的 load / save / list
+
+当前对应：
+
+* `spikes/preproject_stage3_definition_externalization/toolchain/src/spike_v3/state/`
+
+### L6 Target Substrate
+
+负责：
+
+* target repo git semantics
+* target layout bootstrap
+* on-disk workflow state contract
+
+当前对应：
+
+* `spikes/preproject_stage3_definition_externalization/toolchain/src/spike_v3/target/repo.clj`
+* `spikes/preproject_stage3_definition_externalization/toolchain/src/spike_v3/support/paths.clj`
+
+### L7 Support Substrate
+
+负责：
+
+* 通用 util
+* 文本渲染
+* edn read/write
+* 时间、uuid、hash 等基础能力
+
+当前对应：
+
+* `spikes/preproject_stage3_definition_externalization/toolchain/src/spike_v3/support/util.clj`
+
+## 4. Dependency Direction
+
+当前正式依赖方向应固定为：
+
+```text
+Product Surface
+  -> Workflow Control
+  -> Definition / Model Management
+  -> Runtime Integration
+  -> State Persistence
+  -> Target Substrate
+  -> Support Substrate
+```
+
+几条关键约束：
+
+* 高层可以依赖低层
+* 低层不能反向依赖高层
+* state store 不应反向承接 control logic
+* runtime adapter 不应决定 workflow lifecycle
+* definition interpreter 不应承担 lifecycle management
+
+## 5. Target State Architecture
+
+当前 target 内状态架构为：
+
+```text
+target/
+  .workflow/
+    state/
+      system/
+      definitions/
+      domain/
+    local/
+```
+
+每层语义如下：
+
+### `state/system`
+
+承载工具链自维护模型。
+
+最小包括：
+
+* `install.edn`
+* `target.edn`
+* `layout.edn`
+* `registries/`
+
+### `state/definitions`
+
+承载 target-managed definition packages。
+
+当前最小包括：
+
+* `task_types/<task-type-id>/`
+
+### `state/domain`
+
+承载 durable business models。
+
+当前最小包括：
+
+* `collections/`
+* `tasks/`
+
+### `local`
+
+承载本地 runtime state。
+
+当前最小包括：
+
+* `runs/`
+* `mgr_runs/`
+* `agent_homes/`
+
+## 6. Core Runtime Chain
+
+当前正式运行链路是：
+
+```text
+task
+  -> mgr_run
+  -> mgr decides worker
+  -> workflow CLI
+  -> run prepare
+  -> worker launch
+  -> run finalize
+  -> task update
+  -> next stage or done/error
+```
+
+这里的控制权边界很关键：
+
+* `mgr` 不直接掌握 worker orchestration
+* `mgr` 通过 workflow CLI 归还控制权
+* workflow control layer 执行真正的 prepare / launch / persist
+
+## 7. Definition Package Architecture
+
+当前 `task_type` 已经是 managed package，而不是散文件。
+
+最小 contract 为：
+
+```text
+task_type package
+  = task_type.edn
+  + meta.edn
+  + prompts/
+  + hooks/
+```
+
+其中：
+
+* `task_type.edn` 负责协议定义
+* `meta.edn` 负责管理信息
+* `prompts/` 负责 prompt artifacts
+* `hooks/` 负责最小扩展点
+
+这意味着 definition layer 已经进入正式架构，不再是代码内建 map。
+
+## 8. Candidate Change Architecture
+
+当前系统已形成一个重要但尚未完全闭环的架构事实：
+
+* worker 在 run worktree 中产出 candidate change
+* run 记录 output head
+* task 更新 repo head
+* review 基于 candidate 给出控制结果
+
+但当前系统尚未自动完成 integration。
+
+因此当前正式边界是：
+
+```text
+run
+  = runtime container
+  + candidate carrier
+
+workflow
+  = candidate producer
+  not yet integration engine
+```
+
+## 9. Formalization Direction
+
+如果继续沿这份架构推进，最应该继续正式化的部分是：
+
+1. definition package lifecycle
+2. target model management
+3. workflow recovery
+4. candidate change lifecycle
+5. stable control surface
+
+## 10. One-Line Summary
+
+当前正式架构可以压缩成一句话：
+
+```text
+toolchain owns the control plane,
+target owns the installed state,
+task_type owns the reusable workflow protocol,
+run owns the runtime envelope and candidate change.
 ```
