@@ -1,0 +1,96 @@
+{:namespaces
+ {"vibe-flow.core"
+  {:layer :product-surface
+   :volatility :high
+   :module-kind :surface
+   :complexity :simple
+   :responsibility "Formal application entrypoint placeholder."
+   :split-axis "Split user-facing command routing from runtime bootstrap as the surface grows."}
+
+  "vibe-flow.system"
+  {:layer :workflow-control
+   :volatility :high
+   :module-kind :orchestrator
+   :complexity :complex
+   :responsibility "Formal system wiring placeholder."
+   :split-axis "Split system assembly from lifecycle control when concrete modules arrive."}
+
+  "vibe-flow.workflow.control"
+  {:layer :workflow-control
+   :volatility :high
+   :module-kind :orchestrator
+   :complexity :complex
+   :responsibility "Formal workflow control layer placeholder."
+   :split-axis "Split workflow advance, observe, and recovery flows once the formal control plane lands."}
+
+  "vibe-flow.definition.task-type"
+  {:layer :definition-interpretation
+   :volatility :high
+   :module-kind :interpreter
+   :complexity :complex
+   :responsibility "Formal task_type definition interpreter placeholder."
+   :split-axis "Split artifact loading from prepare-run interpretation and hook enforcement as behavior grows."}
+
+  "vibe-flow.target.install"
+  {:layer :target-substrate
+   :volatility :high
+   :module-kind :orchestrator
+   :complexity :complex
+   :responsibility "Formal target install and reconcile placeholder."
+   :split-axis "Split bootstrap, layout reconcile, and artifact install when the target substrate becomes concrete."}
+
+  "vibe-flow.governance.rules"
+  {:layer :governance
+   :volatility :low
+   :module-kind :policy
+   :complexity :simple
+   :responsibility "Machine-readable governance rule metadata."
+   :stability-role "Governance foundation data should stay small and stable."}
+
+  "vibe-flow.governance.manifest"
+  {:layer :governance
+   :volatility :low
+   :module-kind :foundation
+   :complexity :simple
+   :responsibility "Module manifest loading and lookup helpers."
+   :stability-role "Manifest access should remain a stable governance substrate."}
+
+  "vibe-flow.governance.ns-inspect"
+  {:layer :governance
+   :volatility :low
+   :module-kind :foundation
+   :complexity :simple
+   :responsibility "Namespace/path inspection helpers for governance checks."
+   :stability-role "Namespace inspection should remain a stable governance helper layer."}
+
+  "vibe-flow.governance.checks"
+  {:layer :governance
+   :volatility :high
+   :module-kind :manager
+   :complexity :complex
+   :responsibility "Static governance checks over formal source and test trees."
+   :split-axis "Split path/layout checks from module/dependency checks if the governance surface expands."}
+
+  "vibe-flow.governance.cli"
+  {:layer :governance
+   :volatility :medium
+   :module-kind :surface
+   :complexity :simple
+   :responsibility "Governance command-line entrypoint."
+   :stability-role "CLI output can evolve, but command wiring should stay predictable."}
+
+  "vibe-flow.governance.checks-test"
+  {:layer :test
+   :volatility :medium
+   :module-kind :test
+   :complexity :simple
+   :responsibility "Governance checks regression tests."
+   :stability-role "Tests may evolve with governance rules but stay colocated with the checks they validate."}
+
+  "vibe-flow.test-runner"
+  {:layer :test
+   :volatility :low
+   :module-kind :test
+   :complexity :simple
+   :responsibility "Minimal Clojure test runner entrypoint."
+   :stability-role "Test entrypoint should stay thin and stable."}}}
