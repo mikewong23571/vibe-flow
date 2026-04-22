@@ -1,0 +1,11 @@
+{:paths ["src" "resources"]
+ :aliases
+ {:dev
+  {:extra-paths ["dev" "test"]}
+
+  :test
+  {:extra-paths ["test"]
+   :main-opts ["-m" "vibe-flow.test-runner"]}
+
+  :governance
+  {:main-opts ["-m" "vibe-flow.governance.cli"]}}}
