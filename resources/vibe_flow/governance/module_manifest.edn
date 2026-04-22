@@ -55,6 +55,14 @@
    :responsibility "Small EDN read and write helpers."
    :stability-role "EDN IO should remain a stable low-level substrate."}
 
+  "vibe-flow.platform.target.paths"
+  {:layer :target-substrate
+   :volatility :low
+   :module-kind :foundation
+   :complexity :simple
+   :responsibility "Formal .workflow path and layout helpers."
+   :stability-role "Workflow path layout should stay small and stable."}
+
   "vibe-flow.governance.rules"
   {:layer :governance
    :volatility :low
