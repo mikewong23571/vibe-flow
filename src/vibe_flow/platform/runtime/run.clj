@@ -20,7 +20,6 @@
         prepare-spec (task-type/prepare-run-spec target-root task worker launcher)
         input-head (:input-head prepare-spec)
         worktree-strategy (:worktree-strategy prepare-spec)
-        run-dir (paths/run-dir target-root run-id)
         worktree-dir (paths/run-worktree-dir target-root run-id)
         prompt-path (paths/run-prompt-path target-root run-id)
         output-path (paths/run-output-path target-root run-id)

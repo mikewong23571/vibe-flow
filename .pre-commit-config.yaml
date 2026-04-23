@@ -1,6 +1,18 @@
 repos:
   - repo: local
     hooks:
+      - id: cljfmt-check
+        name: cljfmt check
+        entry: clojure -M:fmt-check
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: clj-kondo
+        name: clj-kondo lint
+        entry: clojure -M:lint
+        language: system
+        pass_filenames: false
+        always_run: true
       - id: vibe-flow-governance
         name: vibe-flow governance
         entry: clojure -M:governance

@@ -95,7 +95,7 @@
          [(issue :namespace-match
                  :error
                  path
-                 (str "Namespace `" declared "` does not match expected `" expected "`.") )]
+                 (str "Namespace `" declared "` does not match expected `" expected "`."))]
 
          :else
          [])))
@@ -212,7 +212,7 @@
                       :error
                       path
                       (str "Namespace `" ns-name "` in layer `" layer
-                           "` cannot depend on `" dep "` in layer `" dep-layer "`.") )])))
+                           "` cannot depend on `" dep "` in layer `" dep-layer "`."))])))
         (ns-inspect/required-libs file))))
    (clojure-source-files)))
 

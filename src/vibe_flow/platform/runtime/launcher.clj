@@ -90,11 +90,10 @@
   (let [cmd (codex-command run)
         home-dir (codex-home-dir target-root run)
         env (codex-env home-dir)
-        {:keys [exit out err] :as result}
-        (apply shell/sh
-               (concat cmd
-                       [:dir (get-in run [:worktree :dir])]
-                       [:env env]))
+        result (apply shell/sh
+                      (concat cmd
+                              [:dir (get-in run [:worktree :dir])]
+                              [:env env]))
         output-file (io/file (get-in run [:output :path]))
         output (if (.exists output-file)
                  (slurp output-file)

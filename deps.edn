@@ -13,5 +13,29 @@
   {:extra-paths ["test"]
    :main-opts ["-m" "vibe-flow.test-runner"]}
 
+  :lint
+  {:extra-deps {clj-kondo/clj-kondo {:mvn/version "2026.04.15"}}
+   :main-opts ["-m" "clj-kondo.main"
+               "--lint" "src" "test" "dev"
+               "--parallel"]}
+
+  :fmt
+  {:extra-deps {dev.weavejester/cljfmt {:mvn/version "0.16.3"}}
+   :main-opts ["-m" "cljfmt.main" "fix"
+               "src" "test" "dev"
+               "deps.edn"
+               ".cljfmt.edn"
+               ".clj-kondo/config.edn"
+               "resources/vibe_flow/governance/module_manifest.edn"]}
+
+  :fmt-check
+  {:extra-deps {dev.weavejester/cljfmt {:mvn/version "0.16.3"}}
+   :main-opts ["-m" "cljfmt.main" "check"
+               "src" "test" "dev"
+               "deps.edn"
+               ".cljfmt.edn"
+               ".clj-kondo/config.edn"
+               "resources/vibe_flow/governance/module_manifest.edn"]}
+
   :governance
   {:main-opts ["-m" "vibe-flow.governance.cli"]}}}

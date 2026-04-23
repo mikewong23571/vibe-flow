@@ -7,16 +7,19 @@ This is a Clojure CLI project for a task-type driven coding-agent workflow toolc
 ## Build, Test, and Development Commands
 
 - `clojure -M:test`: runs the custom `clojure.test` suite via `vibe-flow.test-runner`.
+- `clojure -M:fmt`: formats Clojure and governed EDN files with `cljfmt`.
+- `clojure -M:fmt-check`: checks formatting without modifying files; this runs in pre-commit.
+- `clojure -M:lint`: runs `clj-kondo` over `src`, `test`, and `dev`; this runs in pre-commit.
 - `clojure -M:governance`: checks required project layout, namespace paths, pre-commit wiring, module manifest entries, and governance rules.
 - `clojure -M:cli install`: installs the local `vibe-flow` command and toolchain files.
 - `clojure -M:cli install-target --target /path/to/repo`: initializes a target repository for workflow state.
 - `clojure -M:bootstrap`: bootstraps this checkout as a self-hosted workflow target.
 
-Run tests and governance before opening a PR.
+Run `fmt-check`, `lint`, `governance`, and tests before opening a PR.
 
 ## Coding Style & Naming Conventions
 
-Use idiomatic Clojure with two-space indentation and small, data-oriented functions. Namespace names use kebab-case, while file paths use underscores to match Clojure conventions, for example `vibe-flow.platform.state.task-store` in `src/vibe_flow/platform/state/task_store.clj`. Keep lower layers independent from higher layers: support/state modules should not absorb workflow-control logic. When adding a namespace, add or update its entry in the governance manifest.
+Use idiomatic Clojure with two-space indentation and small, data-oriented functions. Let `cljfmt` own whitespace and namespace formatting, and let `clj-kondo` flag unused requires and static issues. Namespace names use kebab-case, while file paths use underscores to match Clojure conventions, for example `vibe-flow.platform.state.task-store` in `src/vibe_flow/platform/state/task_store.clj`. Keep lower layers independent from higher layers: support/state modules should not absorb workflow-control logic. When adding a namespace, add or update its entry in the governance manifest.
 
 ## Testing Guidelines
 

@@ -10,10 +10,10 @@
    [vibe-flow.platform.state.mgr-run-store :as mgr-run-store]
    [vibe-flow.platform.state.run-store :as run-store]
    [vibe-flow.platform.state.system-store :as system-store]
-   [vibe-flow.platform.target.paths :as paths]
-   [vibe-flow.platform.toolchain.install :as toolchain-install]
-   [vibe-flow.platform.toolchain.paths :as toolchain-paths]
+   [vibe-flow.platform.support.edn :as edn]
    [vibe-flow.platform.target.install :as install]
+   [vibe-flow.platform.target.paths :as paths]
+   [vibe-flow.platform.toolchain.paths :as toolchain-paths]
    [vibe-flow.system :as system]
    [vibe-flow.target.install-test :as install-fixture]
    [vibe-flow.workflow.control :as control]))
@@ -138,7 +138,7 @@
             (task-type-manager/render-template
              (:mgr task-type-manager/legacy-prompt-skeletons)
              {:task_type "impl"}))
-        (let [result (system/bootstrap-self-host! target-root)
+      (let [result (system/bootstrap-self-host! target-root)
             mgr-prompt (slurp (definition/prompt-path target-root :impl :mgr))]
         (is (= :existing (get-in result [:task-type :status])))
         (is (true? (get-in result [:task-type :refreshed?])))
@@ -226,7 +226,7 @@
           (is (.canExecute shim-path))
           (is (.exists (toolchain-paths/install-record-path)))
           (is (= install-record
-                 (vibe-flow.platform.support.edn/read-edn
+                 (edn/read-edn
                   (toolchain-paths/install-record-path)
                   nil)))
           (is (re-find #"export VIBE_FLOW_CLI_CWD=\"\$\{PWD\}\""

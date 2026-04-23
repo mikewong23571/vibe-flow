@@ -232,7 +232,7 @@
                   :load-toolchain system-store/load-toolchain}})
 
 (defn -main [& args]
-  (let [{:keys [command target task-id mgr-run-id worker-launcher decision reason]} (parse-cli-args args)]
+  (let [{:keys [command target task-id mgr-run-id decision reason]} (parse-cli-args args)]
     (case command
       "help" (print-usage!)
       "install" (prn (install-toolchain!))

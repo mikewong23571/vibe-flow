@@ -1,6 +1,5 @@
 (ns vibe-flow.platform.state.collection-store
   (:require
-   [clojure.java.io :as io]
    [vibe-flow.platform.support.edn :as edn]
    [vibe-flow.platform.target.paths :as paths]))
 

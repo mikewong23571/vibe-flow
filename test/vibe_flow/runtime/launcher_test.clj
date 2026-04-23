@@ -1,6 +1,7 @@
 (ns vibe-flow.runtime.launcher-test
   (:require
    [clojure.java.io :as io]
+   [clojure.java.shell :as shell]
    [clojure.test :refer [deftest is testing]]
    [vibe-flow.platform.runtime.launcher :as launcher]))
 
@@ -15,7 +16,7 @@
              :output {:path (str (io/file temp-dir "output.txt"))}}]
     (try
       (testing "codex launcher uses the real CLI command shape and parses review control"
-        (with-redefs [clojure.java.shell/sh
+        (with-redefs [shell/sh
                       (fn [& args]
                         (spit (get-in run [:output :path]) "RESULT: pass\nlooks good")
                         {:exit 0
@@ -47,7 +48,7 @@
     (try
       (testing "worker home is created and exported even on first launch"
         (let [calls (atom nil)]
-          (with-redefs [clojure.java.shell/sh
+          (with-redefs [shell/sh
                         (fn [& args]
                           (reset! calls args)
                           (spit output-path "done")
