@@ -39,6 +39,14 @@
    :responsibility "Create, register, list, and inspect target-managed task_type packages."
    :split-axis "Split package authoring from registry maintenance and package inspection as task_type lifecycle grows."}
 
+  "vibe-flow.management.task-type-prompts"
+  {:layer :support-substrate
+   :volatility :low
+   :module-kind :foundation
+   :complexity :simple
+   :responsibility "Generated task_type prompt templates and placeholder rendering helpers."
+   :stability-role "Generated prompt templates should remain centralized and free of workflow lifecycle control."}
+
   "vibe-flow.management.domain"
   {:layer :model-management
    :volatility :high
@@ -254,6 +262,14 @@
    :complexity :simple
    :responsibility "Workflow control regression tests for the minimal mock loop."
    :stability-role "Workflow tests may evolve with the minimal control path while staying focused on persisted state transitions."}
+
+  "vibe-flow.workflow.control-recovery-test"
+  {:layer :test
+   :volatility :medium
+   :module-kind :test
+   :complexity :simple
+   :responsibility "Workflow control regression tests for failure and recovery paths."
+   :stability-role "Recovery tests may evolve with runtime failure handling while staying focused on persisted state safety."}
 
   "vibe-flow.runtime.launcher-test"
   {:layer :test

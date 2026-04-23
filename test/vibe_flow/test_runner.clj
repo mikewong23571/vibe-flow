@@ -8,6 +8,7 @@
    [vibe-flow.runtime.launcher-test]
    [vibe-flow.runtime.mgr-run-test]
    [vibe-flow.target.install-test]
+   [vibe-flow.workflow.control-recovery-test]
    [vibe-flow.workflow.control-test]))
 
 (defn -main [& _]
@@ -19,5 +20,6 @@
                         'vibe-flow.runtime.launcher-test
                         'vibe-flow.runtime.mgr-run-test
                         'vibe-flow.target.install-test
+                        'vibe-flow.workflow.control-recovery-test
                         'vibe-flow.workflow.control-test)]
     (System/exit (if (zero? (+ fail error)) 0 1))))
