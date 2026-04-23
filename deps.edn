@@ -1,7 +1,13 @@
 {:paths ["src" "resources"]
  :aliases
- {:dev
+ {:cli
+  {:main-opts ["-m" "vibe-flow.system"]}
+
+  :dev
   {:extra-paths ["dev" "test"]}
+
+  :bootstrap
+  {:main-opts ["-m" "vibe-flow.system" "bootstrap"]}
 
   :test
   {:extra-paths ["test"]

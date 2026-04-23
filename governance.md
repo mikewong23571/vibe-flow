@@ -182,6 +182,28 @@ store 的默认职责是：
 * runtime 决策
 * definition lifecycle 规则
 
+### Rule 7. 外部执行身份必须来自持久化状态，而不是调用方输入
+
+对于会回写 workflow 状态的 callback / wrapper / install 记录：
+
+* launcher、run id、mgr_run id 等执行身份应从持久化记录恢复
+* 不能信任 CLI 重传的可变执行参数去覆盖已准备好的 runtime 决策
+* 写入 shell 脚本的插值参数必须做显式 quoting
+* system model 里持久化的 command 必须先验证“当前可执行”
+
+这类约束优先通过回归测试守护，因为它们属于行为不变量，不是单纯的静态结构问题。
+
+### Rule 8. 安装与回调失败必须保持 target 可恢复
+
+对于会写入 target repo 的安装、bootstrap、callback wrapper 入口：
+
+* 写入 `.workflow/`、`.gitignore` 或 system state 前，必须先验证外部执行依赖可用
+* 前置条件失败时，不应留下半初始化 workflow layout、半写入 system model 或被改写的 ignore 规则
+* callback / wrapper 脚本必须在生成前验证持久化 command 当前可执行
+* 失败路径必须有回归测试，断言 target repo 不会被部分 materialize
+
+这条规则的目标不是实现完整事务系统，而是避免“失败但已污染 target”的不可恢复状态。
+
 ## 5. 单文件可读性规则
 
 ### 5.1 文件长度预算按模块类型治理

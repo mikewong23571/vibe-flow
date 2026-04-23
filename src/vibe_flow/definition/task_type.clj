@@ -245,11 +245,16 @@
         values (merge
                 {:worktree_root (get-in run [:worktree :dir])
                  :task_id (:id task)
+                 :task_stage (or (:stage task) :todo)
                  :goal (text-block (:goal task))
                  :scope (text-block (:scope task))
                  :constraints (text-block (:constraints task))
                  :success_criteria (text-block (:success-criteria task))
-                 :input_head (get-in run [:heads :input])}
+                 :input_head (get-in run [:heads :input])
+                 :latest_worker (or (:latest-worker task) "none")
+                 :latest_worker_output (text-block (:latest-worker-output task))
+                 :latest_review (text-block (:latest-review-output task))
+                 :latest_run_id (or (:latest-run task) "none")}
                 (get-in run [:prepare-run :prompt-inputs] {}))]
     (render-template template values)))
 
@@ -263,6 +268,8 @@
     :success_criteria (text-block (:success-criteria task))
     :task_stage (or (:stage task) :todo)
     :mgr_run_id (:id mgr-run)
+    :worker_launcher (or (:worker-launcher mgr-run) "none")
+    :workflow_cli_path (or (:cli-script mgr-run) "none")
     :latest_worker (or (:latest-worker task) "none")
     :latest_run_id (or (:latest-run task) "none")
     :latest_review (or (:latest-review-output task) "none")}))

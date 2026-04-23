@@ -29,6 +29,16 @@ System
 * `target` 是被工作的 git repository
 * `target` 同时承载 workflow installation state 和 runtime state
 
+从运行边界看，还应补上一层用户环境约束：
+
+```text
+user installs vibe-flow once
+  -> invokes installed vibe-flow command
+  -> installed vibe-flow operates on target
+```
+
+也就是说，target 不应把“当前开发中的源码 checkout”当作稳定执行来源。
+
 ## 2. Architecture Summary
 
 当前系统可以压缩成下面这条链：
@@ -201,6 +211,7 @@ target/
 * `install.edn`
 * `target.edn`
 * `layout.edn`
+* `toolchain.edn`
 * `registries/`
 
 ### `state/definitions`

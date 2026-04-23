@@ -1,6 +1,6 @@
 (ns vibe-flow.workflow.control-test
   (:require
-   [clojure.test :refer [deftest is testing]]
+   [clojure.test :refer [deftest is testing use-fixtures]]
    [vibe-flow.definition.task-type :as definition]
    [vibe-flow.management.domain :as domain]
    [vibe-flow.management.task-type :as task-type-manager]
@@ -14,6 +14,8 @@
    [vibe-flow.platform.target.paths :as paths]
    [vibe-flow.platform.target.repo :as repo]
    [vibe-flow.workflow.control :as control]))
+
+(use-fixtures :each install-fixture/with-fake-toolchain-command)
 
 (deftest mock-workflow-run-loop-persists-task-mgr-run-and-run-state
   (let [target-root (install-fixture/init-git-target! (install-fixture/make-temp-dir))]
@@ -75,7 +77,6 @@
                (control/advance-task! target-root
                                       "impl-task-2"
                                       (:id mgr-run)
-                                      :mock
                                       :done
                                       "forced")))
           (is (= :todo (:stage (task-store/load-task target-root "impl-task-2"))))
@@ -89,7 +90,6 @@
           (control/advance-task! target-root
                                  "impl-task-1"
                                  (:id mgr-run)
-                                 :mock
                                  :done
                                  "complete")
           (is (thrown-with-msg?
@@ -98,7 +98,6 @@
                (control/advance-task! target-root
                                       "impl-task-1"
                                       (:id mgr-run)
-                                      :mock
                                       :done
                                       "complete")))
           (is (= (inc mgr-count-before)
@@ -121,7 +120,6 @@
                (control/advance-task! target-root
                                       "impl-task-invalid-decision"
                                       (:id mgr-run)
-                                      :mock
                                       :bogus
                                       "bad input")))
           (let [task-after (task-store/load-task target-root "impl-task-invalid-decision")
@@ -143,7 +141,6 @@
           (control/advance-task! target-root
                                  "impl-task-stale-mgr"
                                  (:id fresh-mgr-run)
-                                 :mock
                                  :impl
                                  "launch impl")
           (is (thrown-with-msg?
@@ -152,7 +149,6 @@
                (control/advance-task! target-root
                                       "impl-task-stale-mgr"
                                       (:id stale-mgr-run)
-                                      :mock
                                       :done
                                       "late duplicate")))
           (let [task-after (task-store/load-task target-root "impl-task-stale-mgr")

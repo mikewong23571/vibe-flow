@@ -5,6 +5,7 @@
    [vibe-flow.platform.state.system-store :as system-store]
    [vibe-flow.platform.support.time :as time]
    [vibe-flow.platform.target.paths :as paths]
+   [vibe-flow.platform.toolchain.paths :as toolchain-paths]
    [vibe-flow.platform.target.repo :as repo]))
 
 (def gitignore-begin "# >>> vibe-flow workflow >>>")
@@ -52,6 +53,41 @@
    :current-head (repo/current-head target-root)
    :workflow-root (str (paths/workflow-root target-root))})
 
+(defn executable-file? [path]
+  (let [file (some-> path io/file)]
+    (boolean
+     (and file
+          (.exists file)
+          (.isFile file)
+          (.canExecute file)))))
+
+(defn resolved-command-path [path]
+  (when (executable-file? path)
+    (str (.getCanonicalFile (io/file path)))))
+
+(defn installed-shim-command []
+  (resolved-command-path (toolchain-paths/shim-path)))
+
+(defn existing-command-path [existing]
+  (let [command (:command existing)]
+    (when (and (string? command)
+               (str/includes? command (str java.io.File/separatorChar)))
+      (resolved-command-path command))))
+
+(defn resolve-toolchain-command! [existing]
+  (or (installed-shim-command)
+      (existing-command-path existing)
+      (throw (ex-info "Installed vibe-flow command is unavailable. Run `vibe-flow install` before installing a target."
+                      {:shim-path (str (toolchain-paths/shim-path))
+                       :existing-command (:command existing)}))))
+
+(defn toolchain-record [existing]
+  (let [now (time/now)]
+    {:kind :user-installed-command
+     :command (resolve-toolchain-command! existing)
+     :installed-at (or (:installed-at existing) now)
+     :updated-at now}))
+
 (defn install-gitignore! [target-root]
   (let [path (io/file target-root ".gitignore")
         existing (if (.exists path) (slurp path) "")
@@ -73,18 +109,22 @@
 
 (defn reconcile! [target-root]
   (repo/require-git-repo! target-root)
-  (materialize-layout! target-root)
   (let [existing-install (system-store/load-install target-root)
         existing-target (system-store/load-target target-root)
+        existing-toolchain (system-store/load-toolchain target-root)
         install (install-record target-root existing-install)
         target (target-record target-root existing-target)
-        layout (layout-record target-root)]
+        layout (layout-record target-root)
+        toolchain (toolchain-record existing-toolchain)]
+    (materialize-layout! target-root)
     (system-store/save-install! target-root install)
     (system-store/save-target! target-root target)
     (system-store/save-layout! target-root layout)
+    (system-store/save-toolchain! target-root toolchain)
     {:install install
      :target target
-     :layout layout}))
+     :layout layout
+     :toolchain toolchain}))
 
 (defn install! [target-root]
   (reconcile! target-root))
@@ -94,4 +134,5 @@
    :reconcile! reconcile!
    :load-install system-store/load-install
    :load-target system-store/load-target
-   :load-layout system-store/load-layout})
+   :load-layout system-store/load-layout
+   :load-toolchain system-store/load-toolchain})

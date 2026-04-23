@@ -1,6 +1,13 @@
-(ns user)
+(ns user
+  (:require
+   [clojure.java.io :as io]
+   [vibe-flow.core :as core]
+   [vibe-flow.system :as system]))
 
-(defn repl-overview []
-  ;; TODO: wire a dev REPL helper once the formal runtime enters implementation.
-  {:status :todo
-   :message "Formal REPL helpers are not implemented yet."})
+(defn repl-overview
+  ([] (repl-overview "."))
+  ([target-root]
+   {:cwd (.getCanonicalPath (io/file "."))
+    :target-root (.getCanonicalPath (io/file target-root))
+    :app (core/app-overview target-root)
+    :surface (keys (system/system-blueprint))}))

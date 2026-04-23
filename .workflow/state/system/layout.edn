@@ -1,0 +1,13 @@
+{:layout-version 1,
+ :updated-at "2026-04-23T07:02:32.954663618Z",
+ :state-layout
+ {:system-root
+  "/home/mikewong/proj/main/vibe-flow/.workflow/state/system",
+  :definitions-root
+  "/home/mikewong/proj/main/vibe-flow/.workflow/state/definitions",
+  :domain-root
+  "/home/mikewong/proj/main/vibe-flow/.workflow/state/domain",
+  :local-root "/home/mikewong/proj/main/vibe-flow/.workflow/local"},
+ :registries
+ {:root
+  "/home/mikewong/proj/main/vibe-flow/.workflow/state/system/registries"}}

@@ -65,6 +65,7 @@
   {:system {:install (system-store/load-install target-root)
             :target (system-store/load-target target-root)
             :layout (system-store/load-layout target-root)
+            :toolchain (system-store/load-toolchain target-root)
             :task-types-registry (task-type-manager/list-task-types target-root)}
    :domain {:collections (domain/list-collections target-root)
             :tasks (domain/list-tasks target-root)}

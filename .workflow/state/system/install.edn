@@ -1,0 +1,31 @@
+{:install-version 1,
+ :status :installed,
+ :installed-at "2026-04-23T06:19:27.802771390Z",
+ :updated-at "2026-04-23T07:02:32.925062314Z",
+ :target-root "/home/mikewong/proj/main/vibe-flow",
+ :workflow-root "/home/mikewong/proj/main/vibe-flow/.workflow",
+ :layout-version 1,
+ :target-layout
+ {:state-root "/home/mikewong/proj/main/vibe-flow/.workflow/state",
+  :definitions-root
+  "/home/mikewong/proj/main/vibe-flow/.workflow/state/definitions",
+  :domain-root
+  "/home/mikewong/proj/main/vibe-flow/.workflow/state/domain",
+  :task-types-root
+  "/home/mikewong/proj/main/vibe-flow/.workflow/state/definitions/task_types",
+  :tasks-root
+  "/home/mikewong/proj/main/vibe-flow/.workflow/state/domain/tasks",
+  :mgr-runs-root
+  "/home/mikewong/proj/main/vibe-flow/.workflow/local/mgr_runs",
+  :collections-root
+  "/home/mikewong/proj/main/vibe-flow/.workflow/state/domain/collections",
+  :agent-homes-root
+  "/home/mikewong/proj/main/vibe-flow/.workflow/local/agent_homes",
+  :local-root "/home/mikewong/proj/main/vibe-flow/.workflow/local",
+  :target-root "/home/mikewong/proj/main/vibe-flow",
+  :registries-root
+  "/home/mikewong/proj/main/vibe-flow/.workflow/state/system/registries",
+  :system-root
+  "/home/mikewong/proj/main/vibe-flow/.workflow/state/system",
+  :runs-root "/home/mikewong/proj/main/vibe-flow/.workflow/local/runs",
+  :workflow-root "/home/mikewong/proj/main/vibe-flow/.workflow"}}

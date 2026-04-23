@@ -71,6 +71,30 @@
    :responsibility "Small EDN read and write helpers."
    :stability-role "EDN IO should remain a stable low-level substrate."}
 
+  "vibe-flow.platform.support.shell"
+  {:layer :support-substrate
+   :volatility :low
+   :module-kind :foundation
+   :complexity :simple
+   :responsibility "Small shell quoting helpers for generated command scripts."
+   :stability-role "Shell argument quoting should stay centralized and predictable."}
+
+  "vibe-flow.platform.toolchain.paths"
+  {:layer :support-substrate
+   :volatility :low
+   :module-kind :foundation
+   :complexity :simple
+   :responsibility "User install path helpers for the installed vibe-flow command."
+   :stability-role "User install path layout should stay small and predictable."}
+
+  "vibe-flow.platform.toolchain.install"
+  {:layer :target-substrate
+   :volatility :medium
+   :module-kind :adapter
+   :complexity :simple
+   :responsibility "Install the user-facing vibe-flow command into the local user environment."
+   :stability-role "User install wiring can evolve, but command installation should stay predictable."}
+
   "vibe-flow.platform.target.paths"
   {:layer :target-substrate
    :volatility :low
@@ -238,6 +262,14 @@
    :complexity :simple
    :responsibility "Runtime launcher regression tests for the real Codex command shape."
    :stability-role "Launcher tests may evolve with runtime integration while staying focused on command construction."}
+
+  "vibe-flow.runtime.mgr-run-test"
+  {:layer :test
+   :volatility :medium
+   :module-kind :test
+   :complexity :simple
+   :responsibility "mgr_run wrapper regression tests for callback command quoting."
+   :stability-role "mgr_run tests may evolve with runtime integration while staying focused on persisted callback safety."}
 
   "vibe-flow.core-test"
   {:layer :test

@@ -83,8 +83,45 @@ run carries runtime state and candidate change.
 常用命令：
 
 ```bash
+clojure -M:cli install
+clojure -M:cli install-target --target /path/to/repo
+clojure -M:cli mgr-advance --target /path/to/repo --task-id task-1 --mgr-run-id mgr-1 --decision impl --reason "start implementation"
+clojure -M:bootstrap
 clojure -M:governance
 clojure -M:test
+```
+
+用户视角的第一步是先安装一次 `vibe-flow` 命令：
+
+```bash
+clojure -M:cli install
+```
+
+安装后会生成：
+
+* `~/.local/bin/vibe-flow`
+* `~/.local/share/vibe-flow/toolchain/`
+
+之后可以在任意 git repo 里执行：
+
+```bash
+vibe-flow install-target --target /path/to/repo
+```
+
+它会把 repo 初始化成 workflow target，并把控制面绑定到已安装的 `vibe-flow` 命令，而不是当前开发 checkout。
+
+`clojure -M:bootstrap` 或 `vibe-flow bootstrap --target /path/to/repo` 会把目标 repo 初始化成一个带默认 `impl` task_type 和自优化 seed task 的 self-host workflow target：
+
+* materialize `.workflow/` 正式布局
+* 写入 `.workflow/state/system/toolchain.edn`
+* 创建默认 `impl` task_type
+* 创建 `self-improvement` collection
+* 创建 `bootstrap-self-optimization` 初始任务
+
+当 `mgr_run` 被创建后，`mgr` prompt 里会带一个 `workflow-advance` 脚本路径。该脚本最终会调用：
+
+```bash
+vibe-flow mgr-advance --target /path/to/repo --task-id <id> --mgr-run-id <id> --decision <impl|review|refine|done|error> --reason "<text>"
 ```
 
 提交前拦截通过：

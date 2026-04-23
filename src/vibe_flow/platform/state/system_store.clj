@@ -23,3 +23,9 @@
 
 (defn load-layout [target-root]
   (edn/read-edn (paths/layout-path target-root) nil))
+
+(defn save-toolchain! [target-root toolchain-record]
+  (edn/write-edn! (paths/toolchain-path target-root) toolchain-record))
+
+(defn load-toolchain [target-root]
+  (edn/read-edn (paths/toolchain-path target-root) nil))

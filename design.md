@@ -57,6 +57,12 @@ System
 * `target` 是被操作的 git repository
 * `target` 同时也是 workflow installation target 和 runtime target
 
+从用户视角看，这意味着：
+
+* 用户先安装一次 `vibe-flow`
+* 之后在任意 repo 中通过已安装的 `vibe-flow` 操作 target
+* target 不应依赖“当前正在开发的 toolchain 源码 checkout”作为执行来源
+
 这条边界已经不再是目录习惯，而是正式设计约束。
 
 ## 3. 核心判断
@@ -211,6 +217,7 @@ target/
         install.edn
         target.edn
         layout.edn
+        toolchain.edn
         registries/
       definitions/
         task_types/
@@ -234,6 +241,11 @@ target/
 * `definitions/` 是 target-managed definition artifacts
 * `domain/` 是 durable business state
 * `local/` 是本地 runtime state
+
+其中 `toolchain.edn` 的作用不是表达版本矩阵，而是显式声明：
+
+* 这个 target 由用户已安装的 `vibe-flow` 命令驱动
+* workflow 回调不应退回到当前源码 checkout
 
 ## 7. Definition Layer
 

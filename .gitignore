@@ -14,3 +14,7 @@
 /spikes/**/.workflow/local/
 /spikes/**/runtime_repo/.git/
 /spikes/**/sample_target/.git/
+
+# >>> vibe-flow workflow >>>
+/.workflow/local/
+# <<< vibe-flow workflow <<<

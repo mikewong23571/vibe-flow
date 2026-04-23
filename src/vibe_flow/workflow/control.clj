@@ -110,10 +110,13 @@
                          (not (contains? blocked-task-ids (:id %))))
                    (task-store/load-tasks target-root)))))
 
-(defn create-mgr-run! [target-root task launcher]
-  (let [record (mgr-run/prepare-mgr-run! target-root task launcher)]
-    (mgr-run-store/save-mgr-run! target-root record)
-    record))
+(defn create-mgr-run!
+  ([target-root task launcher]
+   (create-mgr-run! target-root task launcher launcher))
+  ([target-root task launcher worker-launcher]
+   (let [record (mgr-run/prepare-mgr-run! target-root task launcher worker-launcher)]
+     (mgr-run-store/save-mgr-run! target-root record)
+     record)))
 
 (defn mock-mgr-result [target-root task]
   (if-let [worker (task-type/worker-for-stage target-root task)]
@@ -173,7 +176,7 @@
          :next-stage (:stage updated-task)
          :worktree (get-in finalized-run [:worktree :dir])}))))
 
-(defn advance-task! [target-root task-id mgr-run-id worker-launcher decision message]
+(defn advance-task! [target-root task-id mgr-run-id decision message]
   (let [task (task-store/load-task target-root task-id)
         mgr-run-record (mgr-run-store/load-mgr-run target-root mgr-run-id)]
     (when-not task
@@ -201,8 +204,14 @@
                        :latest-mgr-run (:latest-mgr-run task)
                        :task-updated-at (:updated-at task)
                        :mgr-run-started-at (:started-at mgr-run-record)})))
-    (validate-mgr-decision! target-root task decision)
-    (apply-mgr-decision! target-root task mgr-run-record decision message worker-launcher)))
+    (let [worker-launcher (or (:worker-launcher mgr-run-record)
+                              (:launcher mgr-run-record))]
+      (when-not worker-launcher
+        (throw (ex-info "mgr_run is missing a persisted worker launcher."
+                        {:mgr-run-id mgr-run-id
+                         :task-id task-id})))
+      (validate-mgr-decision! target-root task decision)
+      (apply-mgr-decision! target-root task mgr-run-record decision message worker-launcher))))
 
 (defn run-once!
   ([target-root]
@@ -210,7 +219,7 @@
   ([target-root worker-launcher mgr-launcher]
    (when-let [task (select-runnable-task target-root)]
      (case mgr-launcher
-       :mock (let [mgr-run-record (create-mgr-run! target-root task mgr-launcher)
+       :mock (let [mgr-run-record (create-mgr-run! target-root task mgr-launcher worker-launcher)
                    {:keys [decision message]} (mock-mgr-result target-root task)]
                (apply-mgr-decision! target-root task mgr-run-record decision message worker-launcher))
        (throw (ex-info "Unsupported mgr launcher."

@@ -91,6 +91,9 @@
 (defn mgr-run-workdir [target-root mgr-run-id]
   (io/file (mgr-run-dir target-root mgr-run-id) "workdir"))
 
+(defn mgr-run-cli-path [target-root mgr-run-id]
+  (io/file (mgr-run-dir target-root mgr-run-id) "workflow-advance"))
+
 (defn agent-homes-root [target-root]
   (io/file (local-root target-root) "agent_homes"))
 
@@ -111,6 +114,9 @@
 
 (defn layout-path [target-root]
   (io/file (system-root target-root) "layout.edn"))
+
+(defn toolchain-path [target-root]
+  (io/file (system-root target-root) "toolchain.edn"))
 
 (defn materialized-directories [target-root]
   [(workflow-root target-root)

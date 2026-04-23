@@ -1,13 +1,15 @@
 (ns vibe-flow.management.task-type-test
   (:require
    [clojure.java.io :as io]
-   [clojure.test :refer [deftest is testing]]
+   [clojure.test :refer [deftest is testing use-fixtures]]
    [vibe-flow.definition.task-type :as definition]
    [vibe-flow.management.task-type :as task-type-manager]
    [vibe-flow.platform.support.edn :as edn]
    [vibe-flow.platform.target.install :as install]
    [vibe-flow.platform.target.paths :as paths]
    [vibe-flow.target.install-test :as install-fixture]))
+
+(use-fixtures :each install-fixture/with-fake-toolchain-command)
 
 (deftest create-list-and-inspect-task-type-package
   (let [target-root (install-fixture/init-git-target! (install-fixture/make-temp-dir))]
@@ -38,11 +40,38 @@
           (is (some #{(str (definition/prompt-path target-root :impl :mgr))}
                     (get-in inspect [:layout :prompts])))))
 
+      (testing "default prompt templates carry task context instead of one-line placeholders"
+        (is (re-find #"Goal\n\{\{goal\}\}" (slurp (definition/prompt-path target-root :impl :impl))))
+        (is (re-find #"Success Criteria\n\{\{success_criteria\}\}" (slurp (definition/prompt-path target-root :impl :review))))
+        (is (re-find #"Latest Review Feedback\n\{\{latest_review\}\}" (slurp (definition/prompt-path target-root :impl :refine))))
+        (is (re-find #"DECISION: <impl\\|review\\|refine\\|done\\|error>"
+                     (slurp (definition/prompt-path target-root :impl :mgr)))))
+
       (testing "definition helpers resolve installed prompt and hook paths from target"
         (is (= (str (paths/task-type-path target-root :impl))
                (:task-type-path (definition/load-task-type-meta target-root :impl))))
         (is (.exists (definition/prompt-path target-root :impl :impl)))
         (is (.exists (definition/hook-path target-root :impl :before_prepare_run))))
+
+      (testing "worker prompt rendering injects latest review context for refine runs"
+        (let [task {:id "impl-task-1"
+                    :task-type :impl
+                    :stage :awaiting-refine
+                    :goal "Fix the feature."
+                    :scope ["Edit src/ only."]
+                    :constraints ["Do not change workflow metadata."]
+                    :success-criteria ["Review passes."]
+                    :latest-worker :review
+                    :latest-worker-output "RESULT: needs_refine"
+                    :latest-review-output "REASON: add the missing validation."}
+              run {:worker :refine
+                   :worktree {:dir "/tmp/worktree"}
+                   :heads {:input "abc123"}
+                   :prepare-run {:prompt-inputs {}}}
+              prompt (definition/worker-prompt target-root task run)]
+          (is (re-find #"Latest Review Feedback\nREASON: add the missing validation\." prompt))
+          (is (re-find #"task stage: :awaiting-refine" prompt))
+          (is (re-find #"latest worker: :review" prompt))))
 
       (testing "definition helpers reject prompt paths that escape the task_type package"
         (let [task-type-path (paths/task-type-path target-root :impl)

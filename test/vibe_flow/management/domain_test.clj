@@ -1,10 +1,12 @@
 (ns vibe-flow.management.domain-test
   (:require
-   [clojure.test :refer [deftest is testing]]
+   [clojure.test :refer [deftest is testing use-fixtures]]
    [vibe-flow.management.domain :as domain]
    [vibe-flow.management.task-type :as task-type-manager]
    [vibe-flow.platform.target.install :as install]
    [vibe-flow.target.install-test :as install-fixture]))
+
+(use-fixtures :each install-fixture/with-fake-toolchain-command)
 
 (deftest create-and-load-collections-and-tasks
   (let [target-root (install-fixture/init-git-target! (install-fixture/make-temp-dir))]

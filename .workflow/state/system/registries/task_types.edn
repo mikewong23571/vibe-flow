@@ -1,0 +1,10 @@
+[{:layout-version 1,
+  :path
+  "/home/mikewong/proj/main/vibe-flow/.workflow/state/definitions/task_types/impl",
+  :updated-at "2026-04-23T06:25:05.698381948Z",
+  :source {:kind :repo-updated, :reason :prompt-refresh},
+  :installed-at "2026-04-23T06:19:27.923663453Z",
+  :status :active,
+  :id :impl,
+  :kind :task-type,
+  :version 1}]

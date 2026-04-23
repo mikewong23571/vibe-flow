@@ -6,6 +6,7 @@
    [vibe-flow.management.domain-test]
    [vibe-flow.management.task-type-test]
    [vibe-flow.runtime.launcher-test]
+   [vibe-flow.runtime.mgr-run-test]
    [vibe-flow.target.install-test]
    [vibe-flow.workflow.control-test]))
 
@@ -16,6 +17,7 @@
                         'vibe-flow.management.domain-test
                         'vibe-flow.management.task-type-test
                         'vibe-flow.runtime.launcher-test
+                        'vibe-flow.runtime.mgr-run-test
                         'vibe-flow.target.install-test
                         'vibe-flow.workflow.control-test)]
     (System/exit (if (zero? (+ fail error)) 0 1))))
