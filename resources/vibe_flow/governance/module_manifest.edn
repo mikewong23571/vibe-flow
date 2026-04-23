@@ -3,16 +3,16 @@
   {:layer :product-surface
    :volatility :high
    :module-kind :surface
-   :complexity :simple
-   :responsibility "Formal application entrypoint placeholder."
+   :complexity :complex
+   :responsibility "Formal product surface for state inspection and recovery-oriented views."
    :split-axis "Split user-facing command routing from runtime bootstrap as the surface grows."}
 
   "vibe-flow.system"
-  {:layer :workflow-control
+  {:layer :product-surface
    :volatility :high
-   :module-kind :orchestrator
+   :module-kind :surface
    :complexity :complex
-   :responsibility "Formal system wiring placeholder."
+   :responsibility "System wiring for install and system-state entrypoints."
    :split-axis "Split system assembly from lifecycle control when concrete modules arrive."}
 
   "vibe-flow.workflow.control"
@@ -20,7 +20,7 @@
    :volatility :high
    :module-kind :orchestrator
    :complexity :complex
-   :responsibility "Formal workflow control layer placeholder."
+   :responsibility "Minimal workflow orchestration for mgr decisions, run execution, and task persistence."
    :split-axis "Split workflow advance, observe, and recovery flows once the formal control plane lands."}
 
   "vibe-flow.definition.task-type"
@@ -28,15 +28,31 @@
    :volatility :high
    :module-kind :interpreter
    :complexity :complex
-   :responsibility "Formal task_type definition interpreter placeholder."
+   :responsibility "Load and resolve installed task_type artifacts from the target."
    :split-axis "Split artifact loading from prepare-run interpretation and hook enforcement as behavior grows."}
 
-  "vibe-flow.target.install"
-  {:layer :target-substrate
+  "vibe-flow.management.task-type"
+  {:layer :model-management
+   :volatility :high
+   :module-kind :manager
+   :complexity :complex
+   :responsibility "Create, register, list, and inspect target-managed task_type packages."
+   :split-axis "Split package authoring from registry maintenance and package inspection as task_type lifecycle grows."}
+
+  "vibe-flow.management.domain"
+  {:layer :model-management
+   :volatility :high
+   :module-kind :manager
+   :complexity :complex
+   :responsibility "Create and validate collection and task domain records with minimal task_type binding."
+   :split-axis "Split collection lifecycle from task validation and task persistence coordination as domain behavior grows."}
+
+  "vibe-flow.platform.target.install"
+  {:layer :model-management
    :volatility :high
    :module-kind :orchestrator
    :complexity :complex
-   :responsibility "Formal target install and reconcile placeholder."
+   :responsibility "Install and reconcile the formal target workflow layout and system models."
    :split-axis "Split bootstrap, layout reconcile, and artifact install when the target substrate becomes concrete."}
 
   "vibe-flow.platform.support.time"
@@ -62,6 +78,14 @@
    :complexity :simple
    :responsibility "Formal .workflow path and layout helpers."
    :stability-role "Workflow path layout should stay small and stable."}
+
+  "vibe-flow.platform.target.repo"
+  {:layer :target-substrate
+   :volatility :low
+   :module-kind :adapter
+   :complexity :simple
+   :responsibility "Thin git target inspection helpers."
+   :stability-role "Target repo inspection should remain a thin stable adapter."}
 
   "vibe-flow.platform.state.system-store"
   {:layer :state-persistence
@@ -102,6 +126,30 @@
    :complexity :simple
    :responsibility "Persistence helpers for mgr_run runtime records."
    :stability-role "mgr_run persistence should remain a thin durable store."}
+
+  "vibe-flow.platform.runtime.mgr-run"
+  {:layer :runtime-integration
+   :volatility :high
+   :module-kind :adapter
+   :complexity :simple
+   :responsibility "Prepare and finalize mgr_run runtime records."
+   :split-axis "Split prompt materialization from external mgr adapter concerns if mgr runtime support expands."}
+
+  "vibe-flow.platform.runtime.run"
+  {:layer :runtime-integration
+   :volatility :high
+   :module-kind :adapter
+   :complexity :complex
+   :responsibility "Prepare and finalize worker run runtime records and worktrees."
+   :split-axis "Split prepare-run input resolution from finalize-run candidate handling if runtime behavior grows."}
+
+  "vibe-flow.platform.runtime.launcher"
+  {:layer :runtime-integration
+   :volatility :high
+   :module-kind :adapter
+   :complexity :complex
+   :responsibility "Runtime launcher contract with mock execution and reserved Codex entrypoint."
+   :split-axis "Split concrete launcher adapters back out once same-layer runtime contracts are formalized."}
 
   "vibe-flow.governance.rules"
   {:layer :governance
@@ -150,6 +198,54 @@
    :complexity :simple
    :responsibility "Governance checks regression tests."
    :stability-role "Tests may evolve with governance rules but stay colocated with the checks they validate."}
+
+  "vibe-flow.target.install-test"
+  {:layer :test
+   :volatility :medium
+   :module-kind :test
+   :complexity :simple
+   :responsibility "Target install and reconcile regression tests."
+   :stability-role "Install tests may evolve with the formal layout while staying focused on durable behavior."}
+
+  "vibe-flow.management.task-type-test"
+  {:layer :test
+   :volatility :medium
+   :module-kind :test
+   :complexity :simple
+   :responsibility "Task type package management regression tests."
+   :stability-role "Task type tests may evolve with the package contract while staying focused on installed artifacts."}
+
+  "vibe-flow.management.domain-test"
+  {:layer :test
+   :volatility :medium
+   :module-kind :test
+   :complexity :simple
+   :responsibility "Collection and task domain model regression tests."
+   :stability-role "Domain tests may evolve with the minimal schema while staying focused on persistence and validation."}
+
+  "vibe-flow.workflow.control-test"
+  {:layer :test
+   :volatility :medium
+   :module-kind :test
+   :complexity :simple
+   :responsibility "Workflow control regression tests for the minimal mock loop."
+   :stability-role "Workflow tests may evolve with the minimal control path while staying focused on persisted state transitions."}
+
+  "vibe-flow.runtime.launcher-test"
+  {:layer :test
+   :volatility :medium
+   :module-kind :test
+   :complexity :simple
+   :responsibility "Runtime launcher regression tests for the real Codex command shape."
+   :stability-role "Launcher tests may evolve with runtime integration while staying focused on command construction."}
+
+  "vibe-flow.core-test"
+  {:layer :test
+   :volatility :medium
+   :module-kind :test
+   :complexity :simple
+   :responsibility "Product surface regression tests for inspect and recovery views."
+   :stability-role "Core surface tests may evolve with the inspect surface while staying focused on readable state."}
 
   "vibe-flow.test-runner"
   {:layer :test
