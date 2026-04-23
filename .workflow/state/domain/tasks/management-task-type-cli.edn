@@ -1,0 +1,27 @@
+{:updated-at "2026-04-23T16:26:03.241715341Z",
+ :constraints
+ ["Do not change the .workflow layout protocol unless governance is updated."
+  "Do not remove existing bootstrap/install behavior."
+  "Cover new behavior with clojure.test and governance manifest updates when namespaces are added."],
+ :stage :awaiting-review,
+ :collection-id "self-improvement",
+ :success-criteria
+ ["Users can discover installed task types from the CLI."
+  "Users can inspect the impl task_type definition and metadata from the CLI."
+  "fmt-check, lint, governance, reflection-check, and tests pass."],
+ :goal
+ "Expose a user-facing management surface for installed task types.",
+ :scope
+ ["Add stable CLI/API paths to list and inspect installed task types."
+  "Keep generated impl task_type registration behavior intact."
+  "Prefer small implementation changes under src/vibe_flow/system.clj and management task-type namespaces."],
+ :latest-mgr-decision :impl,
+ :latest-worker-output
+ "Implemented the user-facing task_type list/inspect CLI surface in the main working tree; ready for review.",
+ :task-type :impl,
+ :id "management-task-type-cli",
+ :review-count 0,
+ :latest-worker :impl,
+ :created-at "2026-04-23T16:17:28.529550339Z",
+ :mgr-count 1,
+ :run-count 1}
