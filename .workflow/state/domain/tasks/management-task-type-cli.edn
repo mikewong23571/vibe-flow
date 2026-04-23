@@ -1,6 +1,8 @@
-{:updated-at "2026-04-23T16:26:03.241715341Z",
+{:updated-at "2026-04-23T18:00:00Z",
  :constraints
- ["Do not change the .workflow layout protocol unless governance is updated."
+ ["Use docs/plan/product-cli-facade-governance.md as the command-surface design context."
+  "Keep task-type CLI work aligned with the governed CLI facade/provider-registry direction."
+  "Do not change the .workflow layout protocol unless governance is updated."
   "Do not remove existing bootstrap/install behavior."
   "Cover new behavior with clojure.test and governance manifest updates when namespaces are added."],
  :stage :awaiting-review,
@@ -8,11 +10,14 @@
  :success-criteria
  ["Users can discover installed task types from the CLI."
   "Users can inspect the impl task_type definition and metadata from the CLI."
+  "The task-type management surface fits the current CLI facade/provider-registry refactor."
   "fmt-check, lint, governance, reflection-check, and tests pass."],
  :goal
  "Expose a user-facing management surface for installed task types.",
  :scope
- ["Add stable CLI/API paths to list and inspect installed task types."
+ ["Use docs/plan/product-cli-facade-governance.md as the CLI refactor context."
+  "Add stable CLI/API paths to list and inspect installed task types."
+  "Keep the exposed surface compatible with the current governed CLI facade/provider-registry direction."
   "Keep generated impl task_type registration behavior intact."
   "Prefer small implementation changes under src/vibe_flow/system.clj and management task-type namespaces."],
  :latest-mgr-decision :impl,

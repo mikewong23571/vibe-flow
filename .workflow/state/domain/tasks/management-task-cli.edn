@@ -1,6 +1,8 @@
-{:updated-at "2026-04-23T16:17:28.604279658Z",
+{:updated-at "2026-04-23T18:00:00Z",
  :constraints
- ["Do not bypass task_type validation."
+ ["Use docs/plan/product-cli-facade-governance.md as the command-surface design context."
+  "Keep task/collection commands aligned with the governed CLI facade/provider-registry direction."
+  "Do not bypass task_type validation."
   "Do not write runtime-local records into committed state."
   "Keep target repository state isolated under .workflow/state."],
  :stage :todo,
@@ -8,11 +10,14 @@
  :success-criteria
  ["Users can create a task bound to an installed task_type from the CLI."
   "Users can list and inspect backlog tasks from the CLI."
+  "The task/collection surface fits the current CLI facade/provider-registry refactor."
   "New behavior has focused tests and passes governance."],
  :goal
  "Expose user-facing task and collection management for the workflow backlog.",
  :scope
- ["Add CLI/API paths to create, list, and inspect collections and tasks."
+ ["Use docs/plan/product-cli-facade-governance.md as the CLI refactor context."
+  "Add CLI/API paths to create, list, and inspect collections and tasks."
+  "Route the surface through the governed CLI facade/provider-registry design rather than ad hoc command growth in system.clj."
   "Use the existing domain management validation rules."
   "Keep task records data-oriented and compatible with impl task_schema requirements."],
  :task-type :impl,

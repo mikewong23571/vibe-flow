@@ -1,18 +1,22 @@
-{:updated-at "2026-04-23T16:17:28.652046902Z",
+{:updated-at "2026-04-23T18:00:00Z",
  :constraints
- ["Do not document commands that are not implemented."
+ ["Use docs/plan/product-cli-facade-governance.md as the design reference for CLI wording and governance notes."
+  "Do not document commands that are not implemented."
   "Keep README user-facing and concise."
   "Keep governance checks clean with zero warnings."],
  :stage :todo,
  :collection-id "self-improvement",
  :success-criteria
  ["README explains the management flow from a user perspective."
+  "Docs describe the current CLI facade/provider-registry refactor consistently."
   "Governance manifest reflects any new namespaces."
   "Full local verification passes."],
  :goal
  "Document and govern the task-type/task/agent-home management flow.",
  :scope
- ["Update README user guidance for management commands."
+ ["Use docs/plan/product-cli-facade-governance.md as the CLI refactor context."
+  "Update README user guidance for management commands."
+  "Keep the docs aligned with the current governed CLI facade, provider whitelist, and registry-contract direction."
   "Update architecture/governance notes only where behavior has landed."
   "Ensure module manifest entries remain accurate after implementation."],
  :task-type :impl,

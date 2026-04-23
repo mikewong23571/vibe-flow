@@ -1,18 +1,23 @@
-{:updated-at "2026-04-23T16:17:28.626836900Z",
+{:updated-at "2026-04-23T18:00:00Z",
  :constraints
- ["Do not commit machine-local agent home contents."
+ ["Align any new CLI/API surface with docs/plan/product-cli-facade-governance.md."
+  "Keep agent-home commands behind the governed CLI facade/provider-registry direction."
+  "Do not commit machine-local agent home contents."
   "Keep .workflow/local ignored."
   "Preserve launcher behavior that maps worker-home to CODEX_HOME."],
  :stage :todo,
  :collection-id "self-improvement",
  :success-criteria
  ["Users can prepare/list agent homes without launching a worker."
+  "The agent-home management surface fits the current CLI facade/provider-registry refactor."
   "Agent-home paths are deterministic and target-local."
   "Tests cover path isolation and no committed local state is required."],
  :goal "Implement explicit management for target-local agent homes.",
  :scope
- ["Define the supported agent-home lifecycle for mgr and worker homes."
+ ["Use docs/plan/product-cli-facade-governance.md as the command-surface design context."
+  "Define the supported agent-home lifecycle for mgr and worker homes."
   "Expose commands or API to list and prepare agent homes under .workflow/local/agent_homes."
+  "Fit the management entrypoints into the current governed CLI facade/provider-registry direction rather than adding ad hoc routing logic."
   "Keep agent homes separated from source code, task definitions, and user-level global installation."],
  :task-type :impl,
  :id "management-agent-home",
