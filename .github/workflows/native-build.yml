@@ -1,0 +1,75 @@
+name: Native Build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  native:
+    name: ${{ matrix.artifact }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact: vibe-flow-linux-x64
+          - os: macos-15-intel
+            artifact: vibe-flow-macos-x64
+          - os: macos-latest
+            artifact: vibe-flow-macos-arm64
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup GraalVM
+        uses: graalvm/setup-graalvm@v1
+        with:
+          java-version: "21"
+          distribution: graalvm
+          native-image-job-reports: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Clojure
+        uses: DeLaGuardo/setup-clojure@13.4
+        with:
+          cli: latest
+
+      - name: Cache Clojure deps
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.m2/repository
+            ~/.gitlibs
+            .cpcache
+            spikes/native_binary/.cpcache
+          key: native-clojure-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('deps.edn', 'spikes/native_binary/deps.edn') }}
+          restore-keys: |
+            native-clojure-${{ runner.os }}-${{ runner.arch }}-
+
+      - name: Build uberjar
+        working-directory: spikes/native_binary
+        run: clojure -T:build uber
+
+      - name: Build native image
+        working-directory: spikes/native_binary
+        run: |
+          native-image --no-fallback \
+            --features=clj_easy.graal_build_time.InitClojureClasses \
+            -jar target/vibe-flow-native-spike.jar \
+            target/${{ matrix.artifact }}
+
+      - name: Verify native binary
+        working-directory: spikes/native_binary
+        run: ./target/${{ matrix.artifact }} help
+
+      - name: Package artifact
+        working-directory: spikes/native_binary/target
+        run: tar -czf ${{ matrix.artifact }}.tar.gz ${{ matrix.artifact }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: spikes/native_binary/target/${{ matrix.artifact }}.tar.gz
+          if-no-files-found: error

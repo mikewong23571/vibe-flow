@@ -118,14 +118,14 @@
 (defn create-task-type! [target-root task-type]
   (ensure-installed-target! target-root)
   (let [task-type* (definition/task-type-id task-type)
-        task-type-dir (paths/task-type-dir target-root task-type*)
-        hooks-dir (paths/task-type-hooks-dir target-root task-type*)
-        hook-path (io/file hooks-dir "before_prepare_run")]
+        ^java.io.File task-type-dir (paths/task-type-dir target-root task-type*)
+        ^java.io.File hooks-dir (paths/task-type-hooks-dir target-root task-type*)
+        ^java.io.File hook-path (io/file hooks-dir "before_prepare_run")]
     (when (.exists task-type-dir)
       (throw (ex-info "task_type already exists."
                       {:task-type task-type*
                        :path (str task-type-dir)})))
-    (.mkdirs (paths/task-type-prompts-dir target-root task-type*))
+    (.mkdirs ^java.io.File (paths/task-type-prompts-dir target-root task-type*))
     (.mkdirs hooks-dir)
     (edn/write-edn! (paths/task-type-path target-root task-type*)
                     (skeleton-task-type-record task-type*))
@@ -152,7 +152,7 @@
     (when (managed-task-type? target-root task-type*)
       (let [refreshed? (reduce
                         (fn [changed? prompt-name]
-                          (let [path (prompt-path target-root task-type* prompt-name)
+                          (let [^java.io.File path (prompt-path target-root task-type* prompt-name)
                                 expected (prompts/rendered-prompt task-type* prompt-name prompts/prompt-skeletons)
                                 legacy (prompts/rendered-prompt task-type* prompt-name prompts/legacy-prompt-skeletons)
                                 existing (when (.exists path) (slurp path))]
@@ -181,8 +181,8 @@
   (ensure-installed-target! target-root)
   (let [task-type* (definition/task-type-id task-type)
         task-type-dir (paths/task-type-dir target-root task-type*)
-        prompt-files (or (.listFiles (paths/task-type-prompts-dir target-root task-type*)) [])
-        hook-files (or (.listFiles (paths/task-type-hooks-dir target-root task-type*)) [])
+        prompt-files (or (.listFiles ^java.io.File (paths/task-type-prompts-dir target-root task-type*)) [])
+        hook-files (or (.listFiles ^java.io.File (paths/task-type-hooks-dir target-root task-type*)) [])
         registry-entry (some #(when (= (:id %) task-type*) %)
                              (load-registry target-root))]
     {:task-type task-type*
@@ -193,10 +193,10 @@
               :task-type-path (str (paths/task-type-path target-root task-type*))
               :meta-path (str (paths/task-type-meta-path target-root task-type*))
               :prompts (->> prompt-files
-                            (map #(.getPath %))
+                            (map (fn [^java.io.File file] (.getPath file)))
                             sort
                             vec)
               :hooks (->> hook-files
-                          (map #(.getPath %))
+                          (map (fn [^java.io.File file] (.getPath file)))
                           sort
                           vec)}}))

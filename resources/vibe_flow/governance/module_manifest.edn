@@ -31,6 +31,14 @@
    :responsibility "Load and resolve installed task_type artifacts from the target."
    :split-axis "Split artifact loading from prepare-run interpretation and hook enforcement as behavior grows."}
 
+  "vibe-flow.definition.rendering"
+  {:layer :support-substrate
+   :volatility :low
+   :module-kind :foundation
+   :complexity :simple
+   :responsibility "Pure text rendering helpers for task_type prompt materialization."
+   :stability-role "Rendering helpers should stay data-oriented and independent from target state."}
+
   "vibe-flow.management.task-type"
   {:layer :model-management
    :volatility :high

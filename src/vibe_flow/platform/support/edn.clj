@@ -10,13 +10,13 @@
       (pprint data))))
 
 (defn write-edn! [path data]
-  (let [file (io/file path)]
+  (let [^java.io.File file (io/file path)]
     (io/make-parents file)
     (spit file (pprint-str data))
     data))
 
 (defn read-edn [path default]
-  (let [file (io/file path)]
+  (let [^java.io.File file (io/file path)]
     (if (.exists file)
       (edn/read-string (slurp file))
       default)))

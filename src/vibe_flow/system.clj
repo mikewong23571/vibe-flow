@@ -108,19 +108,19 @@
       :task task-result})))
 
 (defn current-command-root []
-  (.getCanonicalPath (io/file ".")))
+  (.getCanonicalPath ^java.io.File (io/file ".")))
 
 (defn getenv [name]
   (System/getenv name))
 
 (defn cli-caller-root []
-  (.getCanonicalPath (io/file (or (getenv "VIBE_FLOW_CLI_CWD") "."))))
+  (.getCanonicalPath ^java.io.File (io/file (or (getenv "VIBE_FLOW_CLI_CWD") "."))))
 
 (defn resolve-cli-target [target]
-  (let [target-file (io/file (or target "."))
-        resolved (if (.isAbsolute target-file)
-                   target-file
-                   (io/file (cli-caller-root) (or target ".")))]
+  (let [^java.io.File target-file (io/file (or target "."))
+        ^java.io.File resolved (if (.isAbsolute target-file)
+                                 target-file
+                                 (io/file (cli-caller-root) (or target ".")))]
     (.getCanonicalPath resolved)))
 
 (defn install-toolchain!

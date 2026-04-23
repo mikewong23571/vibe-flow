@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Setup Clojure
+        uses: DeLaGuardo/setup-clojure@13.4
+        with:
+          cli: latest
+
+      - name: Cache Clojure deps
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.m2/repository
+            ~/.gitlibs
+            .cpcache
+          key: clojure-${{ runner.os }}-${{ hashFiles('deps.edn', '.clj-kondo/config.edn', '.cljfmt.edn') }}
+          restore-keys: |
+            clojure-${{ runner.os }}-
+
+      - name: Format check
+        run: clojure -M:fmt-check
+
+      - name: Reflection check
+        run: clojure -M:reflection-check
+
+      - name: Lint
+        run: clojure -M:lint
+
+      - name: Governance
+        run: clojure -M:governance
+
+      - name: Test
+        run: clojure -M:test

@@ -19,6 +19,11 @@
                "--lint" "src" "test" "dev"
                "--parallel"]}
 
+  :reflection-check
+  {:extra-paths ["dev"]
+   :jvm-opts ["-Dclojure.compiler.direct-linking=true"]
+   :main-opts ["-m" "vibe-flow.reflection-check"]}
+
   :fmt
   {:extra-deps {dev.weavejester/cljfmt {:mvn/version "0.16.3"}}
    :main-opts ["-m" "cljfmt.main" "fix"

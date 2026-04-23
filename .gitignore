@@ -1,9 +1,11 @@
 /.cpcache/
+/spikes/**/.cpcache/
 /.venv-pre-commit/
 /.codex
 /.tmp-codex-home/
 /target/
 /classes/
+/spikes/**/target/
 /.clj-kondo/.cache/
 /.lsp/
 /.nrepl-port

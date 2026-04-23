@@ -4,13 +4,13 @@
    [vibe-flow.platform.target.paths :as paths]))
 
 (defn task-files [target-root]
-  (let [dir (paths/tasks-root target-root)
+  (let [^java.io.File dir (paths/tasks-root target-root)
         files (.listFiles dir)]
     (if files
       (->> files
-           (filter #(.isFile %))
-           (filter #(.endsWith (.getName %) ".edn"))
-           (sort-by #(.getName %))
+           (filter (fn [^java.io.File file] (.isFile file)))
+           (filter (fn [^java.io.File file] (.endsWith (.getName file) ".edn")))
+           (sort-by (fn [^java.io.File file] (.getName file)))
            vec)
       [])))
 

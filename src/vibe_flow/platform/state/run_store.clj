@@ -4,14 +4,14 @@
    [vibe-flow.platform.target.paths :as paths]))
 
 (defn run-files [target-root]
-  (let [dir (paths/runs-root target-root)
+  (let [^java.io.File dir (paths/runs-root target-root)
         entries (.listFiles dir)]
     (if entries
       (->> entries
-           (filter #(.isDirectory %))
-           (map #(paths/run-path target-root (.getName %)))
-           (filter #(.exists %))
-           (sort-by #(.getPath %))
+           (filter (fn [^java.io.File entry] (.isDirectory entry)))
+           (map (fn [^java.io.File entry] (paths/run-path target-root (.getName entry))))
+           (filter (fn [^java.io.File path] (.exists path)))
+           (sort-by (fn [^java.io.File path] (.getPath path)))
            vec)
       [])))
 

@@ -4,7 +4,8 @@
    [vibe-flow.platform.target.paths :as paths]))
 
 (defn installed? [target-root]
-  (.exists (paths/install-path target-root)))
+  (let [^java.io.File path (paths/install-path target-root)]
+    (.exists path)))
 
 (defn save-install! [target-root install-record]
   (edn/write-edn! (paths/install-path target-root) install-record))

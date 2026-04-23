@@ -44,7 +44,7 @@
          (not= (:latest-mgr-run task) (:id mgr-run-record))
          mgr-started-at
          task-updated-at
-         (.isBefore mgr-started-at task-updated-at))))
+         (.isBefore ^java.time.Instant mgr-started-at task-updated-at))))
 
 (defn next-stage [worker result]
   (cond

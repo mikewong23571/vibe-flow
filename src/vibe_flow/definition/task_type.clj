@@ -4,6 +4,7 @@
    [clojure.java.io :as io]
    [clojure.java.shell :as shell]
    [clojure.string :as str]
+   [vibe-flow.definition.rendering :as rendering]
    [vibe-flow.platform.support.edn :as edn]
    [vibe-flow.platform.target.paths :as paths]
    [vibe-flow.platform.target.repo :as repo]))
@@ -30,7 +31,7 @@
 
 (defn load-task-type [target-root task-type]
   (let [task-type* (task-type-id task-type)
-        path (paths/task-type-path target-root task-type*)]
+        ^java.io.File path (paths/task-type-path target-root task-type*)]
     (when-not (.exists path)
       (throw (ex-info "task_type is not installed."
                       {:task-type task-type*
@@ -39,7 +40,7 @@
 
 (defn load-task-type-meta [target-root task-type]
   (let [task-type* (task-type-id task-type)
-        path (paths/task-type-meta-path target-root task-type*)]
+        ^java.io.File path (paths/task-type-meta-path target-root task-type*)]
     (when-not (.exists path)
       (throw (ex-info "task_type meta is missing."
                       {:task-type task-type*
@@ -47,10 +48,12 @@
     (edn/read-edn path nil)))
 
 (defn resolve-installed-path [target-root task-type relative-path]
-  (let [task-type-dir (.getCanonicalFile
-                       (paths/task-type-dir target-root (task-type-id task-type)))
-        resolved-path (.getCanonicalFile
-                       (io/file task-type-dir relative-path))
+  (let [^java.io.File task-type-dir (.getCanonicalFile
+                                     ^java.io.File
+                                     (paths/task-type-dir target-root (task-type-id task-type)))
+        ^java.io.File resolved-path (.getCanonicalFile
+                                     ^java.io.File
+                                     (io/file task-type-dir relative-path))
         task-type-dir-path (.getPath task-type-dir)
         resolved-path-str (.getPath resolved-path)
         within-package? (or (= resolved-path-str task-type-dir-path)
@@ -89,7 +92,7 @@
   (get-in (load-task-type target-root (:task-type task))
           [:workers (or (:stage task) :todo)]))
 
-(declare blankish? text-block validate-task-definition!)
+(declare blankish? validate-task-definition!)
 
 (defn prepare-run-config [target-root task-type]
   (:prepare-run (load-task-type target-root task-type)))
@@ -122,7 +125,7 @@
 (defn resolve-prompt-inputs [task prompt-input-specs]
   (reduce-kv
    (fn [m k spec]
-     (assoc m k (text-block (resolve-value task spec))))
+     (assoc m k (rendering/text-block (resolve-value task spec))))
    {}
    prompt-input-specs))
 
@@ -146,7 +149,7 @@
 (defn run-before-prepare-run! [target-root task worker launcher]
   (let [task-type-def (load-task-type target-root (:task-type task))
         before-spec (or (get-in task-type-def [:prepare-run :before])
-                        (let [default-hook (hook-path target-root (:task-type task) :before_prepare_run)]
+                        (let [^java.io.File default-hook (hook-path target-root (:task-type task) :before_prepare_run)]
                           (when (.exists default-hook)
                             default-before-prepare-run)))]
     (when before-spec
@@ -221,22 +224,6 @@
                        :missing missing})))
     task))
 
-(defn text-block [value]
-  (cond
-    (nil? value) "none"
-    (string? value) (if (str/blank? value) "none" value)
-    (sequential? value) (if (seq value) (str/join "\n" (map str value)) "none")
-    :else (str value)))
-
-(defn render-template [template replacements]
-  (reduce-kv
-   (fn [content key value]
-     (str/replace content
-                  (str "{{" (name key) "}}")
-                  (str value)))
-   template
-   replacements))
-
 (defn prompt-template [target-root task-type-id prompt-name]
   (slurp (prompt-path target-root task-type-id prompt-name)))
 
@@ -246,26 +233,26 @@
                 {:worktree_root (get-in run [:worktree :dir])
                  :task_id (:id task)
                  :task_stage (or (:stage task) :todo)
-                 :goal (text-block (:goal task))
-                 :scope (text-block (:scope task))
-                 :constraints (text-block (:constraints task))
-                 :success_criteria (text-block (:success-criteria task))
+                 :goal (rendering/text-block (:goal task))
+                 :scope (rendering/text-block (:scope task))
+                 :constraints (rendering/text-block (:constraints task))
+                 :success_criteria (rendering/text-block (:success-criteria task))
                  :input_head (get-in run [:heads :input])
                  :latest_worker (or (:latest-worker task) "none")
-                 :latest_worker_output (text-block (:latest-worker-output task))
-                 :latest_review (text-block (:latest-review-output task))
+                 :latest_worker_output (rendering/text-block (:latest-worker-output task))
+                 :latest_review (rendering/text-block (:latest-review-output task))
                  :latest_run_id (or (:latest-run task) "none")}
                 (get-in run [:prepare-run :prompt-inputs] {}))]
-    (render-template template values)))
+    (rendering/render-template template values)))
 
 (defn mgr-prompt [target-root task mgr-run]
-  (render-template
+  (rendering/render-template
    (prompt-template target-root (:task-type task) :mgr)
    {:task_id (:id task)
-    :goal (text-block (:goal task))
-    :scope (text-block (:scope task))
-    :constraints (text-block (:constraints task))
-    :success_criteria (text-block (:success-criteria task))
+    :goal (rendering/text-block (:goal task))
+    :scope (rendering/text-block (:scope task))
+    :constraints (rendering/text-block (:constraints task))
+    :success_criteria (rendering/text-block (:success-criteria task))
     :task_stage (or (:stage task) :todo)
     :mgr_run_id (:id mgr-run)
     :worker_launcher (or (:worker-launcher mgr-run) "none")
@@ -291,7 +278,7 @@
    :prepare-run-spec prepare-run-spec
    :required-task-fields required-task-fields
    :validate-task-definition! validate-task-definition!
-   :render-template render-template
+   :render-template rendering/render-template
    :worker-prompt worker-prompt
    :mgr-prompt mgr-prompt
    :parse-review-control parse-review-control

@@ -10,19 +10,20 @@
   ["deps.edn" "src" "resources"])
 
 (defn canonical-file [path]
-  (.getCanonicalFile (io/file path)))
+  (.getCanonicalFile ^java.io.File (io/file path)))
 
 (defn delete-tree! [file]
-  (when (.exists file)
-    (doseq [child (reverse (file-seq file))]
-      (.delete child))))
+  (let [^java.io.File file* (io/file file)]
+    (when (.exists file*)
+      (doseq [^java.io.File child (reverse (file-seq file*))]
+        (.delete child)))))
 
 (defn ensure-directory! [path]
-  (.mkdirs (io/file path))
+  (.mkdirs ^java.io.File (io/file path))
   path)
 
 (defn copy-file! [source target]
-  (let [target-file (io/file target)]
+  (let [^java.io.File target-file (io/file target)]
     (io/make-parents target-file)
     (with-open [in (io/input-stream source)
                 out (io/output-stream target-file)]
@@ -30,18 +31,19 @@
     target-file))
 
 (defn copy-tree! [source-dir target-dir]
-  (doseq [child (file-seq (io/file source-dir))
-          :when (not= (.getCanonicalPath child)
-                      (.getCanonicalPath (io/file source-dir)))]
-    (let [relative (.relativize (.toPath (io/file source-dir))
-                                (.toPath child))
-          target (io/file target-dir (str relative))]
-      (if (.isDirectory child)
-        (.mkdirs target)
-        (copy-file! child target)))))
+  (let [^java.io.File source-dir-file (io/file source-dir)]
+    (doseq [^java.io.File child (file-seq source-dir-file)
+            :when (not= (.getCanonicalPath child)
+                        (.getCanonicalPath source-dir-file))]
+      (let [relative (.relativize (.toPath source-dir-file)
+                                  (.toPath child))
+            ^java.io.File target (io/file target-dir (str relative))]
+        (if (.isDirectory child)
+          (.mkdirs target)
+          (copy-file! child target))))))
 
 (defn copy-asset! [source-root relative-path install-root]
-  (let [source (io/file source-root relative-path)
+  (let [^java.io.File source (io/file source-root relative-path)
         target (io/file install-root relative-path)]
     (when-not (.exists source)
       (throw (ex-info "Toolchain install asset is missing."
@@ -53,9 +55,9 @@
       (copy-file! source target))))
 
 (defn ensure-source-root! [source-root]
-  (let [root (canonical-file source-root)]
+  (let [^java.io.File root (canonical-file source-root)]
     (doseq [asset install-assets]
-      (when-not (.exists (io/file root asset))
+      (when-not (.exists ^java.io.File (io/file root asset))
         (throw (ex-info "Toolchain source root is missing required install assets."
                         {:source-root (str root)
                          :asset asset}))))
@@ -77,7 +79,7 @@
        "exec " (shell/join-command ["clojure" "-M:cli"]) " \"$@\"\n"))
 
 (defn write-shim! [toolchain-root]
-  (let [shim (paths/shim-path)]
+  (let [^java.io.File shim (paths/shim-path)]
     (ensure-directory! (paths/bin-root))
     (spit shim (shim-script toolchain-root))
     (.setExecutable shim true)
@@ -95,10 +97,10 @@
     staging-root))
 
 (defn install! [source-root]
-  (let [source-root* (ensure-source-root! source-root)
-        toolchain-root (paths/toolchain-root)
+  (let [^java.io.File source-root* (ensure-source-root! source-root)
+        ^java.io.File toolchain-root (paths/toolchain-root)
         in-place-install? (= (.getCanonicalPath source-root*)
-                             (.getCanonicalPath (canonical-file toolchain-root)))
+                             (.getCanonicalPath ^java.io.File (canonical-file toolchain-root)))
         staged-root (when in-place-install?
                       (stage-install-source! source-root*))
         copy-root (or staged-root source-root*)]

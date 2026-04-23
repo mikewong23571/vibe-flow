@@ -24,7 +24,7 @@
        :message "mock impl completed"})
 
     :review
-    (let [feature-file (io/file (get-in run [:worktree :dir]) "feature.txt")
+    (let [^java.io.File feature-file (io/file (get-in run [:worktree :dir]) "feature.txt")
           feature (if (.exists feature-file) (slurp feature-file) "")]
       (append-worklog! run (str "review:" (:id task)))
       (if (str/includes? feature "refined by mock")
@@ -50,7 +50,7 @@
 
 (defn codex-home-dir [target-root run]
   (when-let [worker-home (:worker-home run)]
-    (let [path (paths/agent-home-path target-root worker-home)]
+    (let [^java.io.File path (paths/agent-home-path target-root worker-home)]
       (.mkdirs path)
       path)))
 
@@ -94,7 +94,7 @@
                       (concat cmd
                               [:dir (get-in run [:worktree :dir])]
                               [:env env]))
-        output-file (io/file (get-in run [:output :path]))
+        ^java.io.File output-file (io/file (get-in run [:output :path]))
         output (if (.exists output-file)
                  (slurp output-file)
                  "")]

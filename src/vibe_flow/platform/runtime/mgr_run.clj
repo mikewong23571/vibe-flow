@@ -12,13 +12,13 @@
   (str (java.util.UUID/randomUUID)))
 
 (defn write-file! [path content]
-  (let [file (io/file path)]
+  (let [^java.io.File file (io/file path)]
     (io/make-parents file)
     (spit file content)
     file))
 
 (defn executable-file? [path]
-  (let [file (some-> path io/file)]
+  (let [^java.io.File file (some-> path io/file)]
     (boolean
      (and file
           (.exists file)
@@ -30,7 +30,7 @@
 
 (defn path-command [command]
   (when (executable-file? command)
-    (str (.getCanonicalFile (io/file command)))))
+    (str (.getCanonicalFile ^java.io.File (io/file command)))))
 
 (defn path-entries []
   (str/split (or (System/getenv "PATH") "")
@@ -39,7 +39,7 @@
 (defn path-search-command [command]
   (when-not (command-has-path? command)
     (some (fn [dir]
-            (let [candidate (io/file dir command)]
+            (let [^java.io.File candidate (io/file dir command)]
               (when (executable-file? candidate)
                 (str (.getCanonicalFile candidate)))))
           (path-entries))))
@@ -73,7 +73,7 @@
 (defn write-cli-wrapper! [target-root workflow-command task mgr-run-id]
   (let [path (paths/mgr-run-cli-path target-root mgr-run-id)]
     (write-file! path (cli-wrapper-text target-root workflow-command task mgr-run-id))
-    (.setExecutable path true)
+    (.setExecutable ^java.io.File path true)
     path))
 
 (defn prepare-mgr-run!
@@ -84,8 +84,8 @@
          workflow-command* (workflow-command target-root)
          prompt-path (paths/mgr-run-prompt-path target-root mgr-run-id)
          output-path (paths/mgr-run-output-path target-root mgr-run-id)
-         workdir (paths/mgr-run-workdir target-root mgr-run-id)]
-     (.mkdirs (paths/mgr-run-dir target-root mgr-run-id))
+         ^java.io.File workdir (paths/mgr-run-workdir target-root mgr-run-id)]
+     (.mkdirs ^java.io.File (paths/mgr-run-dir target-root mgr-run-id))
      (.mkdirs workdir)
      (let [cli-script (write-cli-wrapper! target-root workflow-command* task mgr-run-id)
            mgr-run {:id mgr-run-id

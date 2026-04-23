@@ -17,7 +17,7 @@
        gitignore-end "\n"))
 
 (defn ensure-directory! [path]
-  (.mkdirs (io/file path))
+  (.mkdirs ^java.io.File (io/file path))
   path)
 
 (defn target-layout [target-root]
@@ -54,7 +54,7 @@
    :workflow-root (str (paths/workflow-root target-root))})
 
 (defn executable-file? [path]
-  (let [file (some-> path io/file)]
+  (let [^java.io.File file (some-> path io/file)]
     (boolean
      (and file
           (.exists file)
@@ -63,7 +63,7 @@
 
 (defn resolved-command-path [path]
   (when (executable-file? path)
-    (str (.getCanonicalFile (io/file path)))))
+    (str (.getCanonicalFile ^java.io.File (io/file path)))))
 
 (defn installed-shim-command []
   (resolved-command-path (toolchain-paths/shim-path)))
@@ -89,7 +89,7 @@
      :updated-at now}))
 
 (defn install-gitignore! [target-root]
-  (let [path (io/file target-root ".gitignore")
+  (let [^java.io.File path (io/file target-root ".gitignore")
         existing (if (.exists path) (slurp path) "")
         pattern (re-pattern
                  (str "(?s)"

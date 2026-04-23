@@ -2,6 +2,8 @@
 
 `spikes/` 保存的是正式项目编码开始前的探索资产。
 
+正式项目启动后的局部技术验证也可以放在这里，但不沿用 `preproject_stageN_<theme>` 命名；这类 spike 不应成为生产路径依赖。
+
 这里的目录名遵循统一规则：
 
 ```text
@@ -22,3 +24,8 @@ preproject_stageN_<theme>
   验证 `System = Toolchain + Target` 这条外边界。
 * [preproject_stage3_definition_externalization](/home/mikewong/proj/main/vibe-flow/spikes/preproject_stage3_definition_externalization)
   验证 definition layer externalization、target model management 起步，以及真实 `codex` 接入。
+
+当前局部技术验证：
+
+* [native_binary](/home/mikewong/proj/main/vibe-flow/spikes/native_binary)
+  验证当前 CLI 走 GraalVM native binary 的集成边界、构建入口和风险。
