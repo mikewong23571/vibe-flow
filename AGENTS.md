@@ -31,4 +31,4 @@ Recent commits use short imperative subjects, sometimes with a conventional pref
 
 ## Security & Configuration Tips
 
-Do not commit machine-local workflow state, credentials, or generated install artifacts. Treat `.workflow/` layout changes as product protocol changes and justify them against `governance.md`.
+Do not commit `.workflow/local/` machine-local runtime artifacts, credentials, or generated install artifacts. Shared durable state under `.workflow/state/domain/` and `.workflow/state/definitions/` is normally commit-worthy, while `.workflow/state/system/` records should be judged by whether they encode machine-local installation details. Treat `.workflow/` layout changes as product protocol changes and justify them against `governance.md`.

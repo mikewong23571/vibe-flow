@@ -108,13 +108,23 @@ clojure -M:cli mgr-advance --target /path/to/repo --task-id task-1 --mgr-run-id 
 
 ## Target State
 
-Vibe Flow 会把 target-local workflow state 放在 `.workflow/` 下：
+Vibe Flow 会把 target-scoped workflow data 放在 `.workflow/` 下：
 
-* `.workflow/state/` 保存 system、task、run 和 manager-run records。
-* `.workflow/local/` 保存 runtime-local artifacts，例如 agent homes。
+* `.workflow/state/` 保存 durable workflow records。
+* `.workflow/local/` 保存 machine-local runtime artifacts，例如 runs、mgr_runs 和 agent homes。
+* `.workflow/state/system/` 保存 toolchain 自维护的 system models。
+* `.workflow/state/definitions/` 保存 target-managed definition artifacts。
+* `.workflow/state/domain/` 保存可共享的 durable domain state，例如 collections 和 tasks。
 * `.workflow/state/system/toolchain.edn` 记录驱动当前 target 的已安装命令。
 
-不要提交机器本地 workflow state、凭据或生成的安装产物。修改 `.workflow/` 协议布局时，应先对照 governance 文档确认边界是否合理。
+提交约定应按语义区分，而不是按 `.workflow/state/` 一刀切：
+
+* `.workflow/local/` 下的 machine-local runtime artifacts 不应提交。
+* 凭据和生成的安装产物不应提交。
+* `.workflow/state/domain/` 和 `.workflow/state/definitions/` 下的共享 durable state 通常应提交。
+* `.workflow/state/system/` 下的记录需要按语义判断；像 `toolchain.edn` 这种机器安装相关记录通常不应提交。
+
+修改 `.workflow/` 协议布局时，应先对照 governance 文档确认边界是否合理。
 
 ## Development
 

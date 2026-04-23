@@ -242,6 +242,12 @@ target/
 * `domain/` 是 durable business state
 * `local/` 是本地 runtime state
 
+提交语义也应与这层分区保持一致：
+
+* `definitions/` 与 `domain/` 默认作为可共享 durable state 对待
+* `local/` 默认作为 machine-local runtime state 对待
+* `system/` 需要按记录语义判断，避免提交机器安装相关细节
+
 其中 `toolchain.edn` 的作用不是表达版本矩阵，而是显式声明：
 
 * 这个 target 由用户已安装的 `vibe-flow` 命令驱动
