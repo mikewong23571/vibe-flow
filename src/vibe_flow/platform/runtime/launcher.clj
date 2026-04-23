@@ -4,6 +4,7 @@
    [clojure.java.shell :as shell]
    [clojure.string :as str]
    [vibe-flow.definition.task-type :as task-type]
+   [vibe-flow.platform.runtime.agent-home-adapter :as agent-home-adapter]
    [vibe-flow.platform.support.time :as time]
    [vibe-flow.platform.target.paths :as paths]))
 
@@ -48,16 +49,36 @@
      :control :error
      :message (str "mock launcher does not support worker " worker)}))
 
-(defn codex-home-dir [target-root run]
+(defn codex-home-check [target-root worker run]
   (when-let [worker-home (:worker-home run)]
-    (let [^java.io.File path (paths/agent-home-path target-root worker-home)]
-      (.mkdirs path)
-      path)))
+    ;; TODO: Add a first-class target setup/doctor flow that tells users how to
+    ;; provision required Codex home auth/config before their first codex run.
+    (agent-home-adapter/assert-agent-home-ready!
+     {:role worker
+      :stage worker
+      :home worker-home
+      :path (str (paths/agent-home-path target-root worker-home))})))
 
-(defn codex-env [home-dir]
+(declare codex-command)
+
+(defn codex-home-failure-result [run ex]
+  {:ok? false
+   :control :error
+   :message (.getMessage ex)
+   :launch {:launcher :codex
+            :cmd (codex-command run)
+            :code-home nil
+            :agent-home (ex-data ex)
+            :stdout ""
+            :stderr (.getMessage ex)
+            :exit nil
+            :prompt-path (get-in run [:prompt :path])
+            :output-path (get-in run [:output :path])}})
+
+(defn codex-env [home-check]
   (cond-> (into {} (System/getenv))
-    home-dir
-    (assoc "CODEX_HOME" (str home-dir))))
+    home-check
+    (assoc "CODEX_HOME" (:path home-check))))
 
 (defn codex-command [run]
   ["codex"
@@ -67,7 +88,7 @@
    "--output-last-message" (get-in run [:output :path])
    (get-in run [:prompt :text])])
 
-(defn codex-launch-result [worker run cmd home-dir {:keys [exit out err]} output]
+(defn codex-launch-result [worker run cmd home-check {:keys [exit out err]} output]
   (let [message (if (str/blank? output)
                   (str/trim (str out "\n" err))
                   output)]
@@ -79,7 +100,8 @@
      :message message
      :launch {:launcher :codex
               :cmd cmd
-              :code-home (some-> home-dir str)
+              :code-home (:path home-check)
+              :agent-home home-check
               :stdout out
               :stderr err
               :exit exit
@@ -87,18 +109,21 @@
               :output-path (get-in run [:output :path])}}))
 
 (defn launch-codex! [target-root worker _task run]
-  (let [cmd (codex-command run)
-        home-dir (codex-home-dir target-root run)
-        env (codex-env home-dir)
-        result (apply shell/sh
-                      (concat cmd
-                              [:dir (get-in run [:worktree :dir])]
-                              [:env env]))
-        ^java.io.File output-file (io/file (get-in run [:output :path]))
-        output (if (.exists output-file)
-                 (slurp output-file)
-                 "")]
-    (codex-launch-result worker run cmd home-dir result output)))
+  (try
+    (let [cmd (codex-command run)
+          home-check (codex-home-check target-root worker run)
+          env (codex-env home-check)
+          result (apply shell/sh
+                        (concat cmd
+                                [:dir (get-in run [:worktree :dir])]
+                                [:env env]))
+          ^java.io.File output-file (io/file (get-in run [:output :path]))
+          output (if (.exists output-file)
+                   (slurp output-file)
+                   "")]
+      (codex-launch-result worker run cmd home-check result output))
+    (catch clojure.lang.ExceptionInfo ex
+      (codex-home-failure-result run ex))))
 
 (defn launch! [target-root launcher worker task run]
   (case launcher

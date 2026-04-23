@@ -22,6 +22,7 @@
     (try
       (install/install! target-root)
       (task-type-manager/create-task-type! target-root :impl)
+      (install-fixture/create-agent-home-configs! target-root)
       (domain/create-collection! target-root
                                  {:id "impl-backlog"
                                   :task-type :impl
@@ -164,6 +165,7 @@
     (try
       (install/install! target-root)
       (task-type-manager/create-task-type! target-root :impl)
+      (install-fixture/create-agent-home-configs! target-root)
       (let [base-head (repo/current-head target-root)
             _ (spit (java.io.File. target-root "CHANGELOG.md") "second commit\n")
             _ (install-fixture/shell! target-root "git" "add" "CHANGELOG.md")
@@ -201,6 +203,7 @@
     (try
       (install/install! target-root)
       (task-type-manager/create-task-type! target-root :impl)
+      (install-fixture/create-agent-home-configs! target-root)
       (spit (definition/hook-path target-root :impl :before_prepare_run)
             (str "#!/usr/bin/env bash\n"
                  "set -euo pipefail\n"

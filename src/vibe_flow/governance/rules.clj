@@ -71,6 +71,17 @@
 (def empty-directory-whitelist
   #{})
 
+(def product-cli-governance-path
+  "src/vibe_flow/system.clj")
+
+(def product-cli-governance-required-defns
+  ["governed-product-cli-design-doc-path"
+   "governed-cli-provider-whitelist"
+   "governed-cli-registry-contract"
+   "load-governed-cli-registry!"
+   "dispatch-governed-cli-command!"
+   "governed-cli-command-whitelist"])
+
 (def rules
   {:project-layout
    {:intent "Keep a standard Clojure project skeleton so code, tooling, and governance all land in predictable places."
@@ -87,6 +98,10 @@
    :module-contract
    {:intent "Keep volatility, complexity, and module role explicit so high-change and complex modules stay intentionally governed."
     :guidance "Fix the manifest entry for the flagged namespace by adding the required module metadata, split axis, or stability role in the governance manifest."}
+
+   :product-cli-governance
+   {:intent "Keep the formal product CLI intentionally governed instead of letting commands grow ad hoc in the routing surface."
+    :guidance "Define the governed CLI whitelist/resource-family functions in src/vibe_flow/system.clj before expanding the product command surface."}
 
    :namespace-match
    {:intent "Keep namespace, directory layout, and source lookup aligned so navigation and tooling remain reliable."

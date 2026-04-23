@@ -44,3 +44,30 @@
                       root]]
           (when (.exists path)
             (.delete path)))))))
+
+(deftest product-cli-governance-rule-requires-governed-system-functions
+  (let [root (.toFile (java.nio.file.Files/createTempDirectory "vibe-flow-governance-cli" (make-array java.nio.file.attribute.FileAttribute 0)))
+        system-file (io/file root "system.clj")]
+    (try
+      (spit system-file "(ns vibe-flow.system)\n(defn governed-cli-provider-whitelist [] nil)\n")
+      (testing "product CLI governance fails when governed system functions are missing"
+        (with-redefs [rules/product-cli-governance-path (ns-inspect/normalize-path system-file)
+                      rules/product-cli-governance-required-defns ["governed-cli-provider-whitelist"
+                                                                   "governed-cli-registry-contract"]]
+          (let [issues (checks/product-cli-governance-issues)]
+            (is (= 1 (count issues)))
+            (is (= :product-cli-governance (:id (first issues))))
+            (is (re-find #"governed-cli-registry-contract" (:message (first issues)))))))
+      (testing "product CLI governance passes once all required system functions exist"
+        (spit system-file
+              (str "(ns vibe-flow.system)\n"
+                   "(defn governed-cli-provider-whitelist [] nil)\n"
+                   "(defn governed-cli-registry-contract [] nil)\n"))
+        (with-redefs [rules/product-cli-governance-path (ns-inspect/normalize-path system-file)
+                      rules/product-cli-governance-required-defns ["governed-cli-provider-whitelist"
+                                                                   "governed-cli-registry-contract"]]
+          (is (empty? (checks/product-cli-governance-issues)))))
+      (finally
+        (doseq [path [system-file root]]
+          (when (.exists path)
+            (.delete path)))))))

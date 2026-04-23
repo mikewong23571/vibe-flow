@@ -21,6 +21,7 @@
     (try
       (install/install! target-root)
       (task-type-manager/create-task-type! target-root :impl)
+      (install-fixture/create-agent-home-configs! target-root)
       (domain/create-collection! target-root
                                  {:id "impl-backlog"
                                   :task-type :impl
@@ -60,6 +61,7 @@
     (try
       (install/install! target-root)
       (task-type-manager/create-task-type! target-root :impl)
+      (install-fixture/create-agent-home-configs! target-root)
       (let [task-type-path (paths/task-type-path target-root :impl)
             definition (edn/read-edn task-type-path nil)]
         (edn/write-edn! task-type-path
@@ -94,6 +96,7 @@
     (try
       (install/install! target-root)
       (task-type-manager/create-task-type! target-root :impl)
+      (install-fixture/create-agent-home-configs! target-root)
       (domain/create-collection! target-root
                                  {:id "impl-backlog"
                                   :task-type :impl
@@ -123,6 +126,7 @@
     (try
       (install/install! target-root)
       (task-type-manager/create-task-type! target-root :impl)
+      (install-fixture/create-agent-home-configs! target-root)
       (let [task-type-path (paths/task-type-path target-root :impl)
             definition (edn/read-edn task-type-path nil)]
         (edn/write-edn! task-type-path
@@ -155,11 +159,47 @@
       (finally
         (install-fixture/delete-tree! target-root)))))
 
+(deftest missing-codex-worker-home-finalizes-run-and-marks-task-error
+  (let [target-root (install-fixture/init-git-target! (install-fixture/make-temp-dir))]
+    (try
+      (install/install! target-root)
+      (task-type-manager/create-task-type! target-root :impl)
+      (domain/create-collection! target-root
+                                 {:id "impl-backlog"
+                                  :task-type :impl
+                                  :name "Implementation backlog"})
+      (domain/create-task! target-root
+                           {:id "impl-task-1"
+                            :collection-id "impl-backlog"
+                            :task-type :impl
+                            :goal "Implement the feature."
+                            :scope ["Edit src/ only."]
+                            :constraints ["Do not change workflow metadata."]
+                            :success-criteria ["Feature behavior is implemented."]})
+      (testing "missing codex worker home becomes a finalized failed run"
+        (let [result (control/run-once! target-root :codex :mock)
+              task (task-store/load-task target-root "impl-task-1")
+              runs (run-store/task-runs target-root "impl-task-1")
+              run (first runs)]
+          (is (= :error (:next-stage result)))
+          (is (= 1 (count runs)))
+          (is (some? (:ended-at run)))
+          (is (= true (:error? run)))
+          (is (= :error (get-in run [:result :control])))
+          (is (= "Agent home is not ready." (get-in run [:result :message])))
+          (is (= :missing-home (get-in run [:result :launch :agent-home :reason])))
+          (is (= :error (:stage task)))
+          (is (= (:id run) (:latest-run task)))
+          (is (re-find #"Agent home is not ready" (:error-output task)))))
+      (finally
+        (install-fixture/delete-tree! target-root)))))
+
 (deftest unsupported-mgr-launcher-does-not-persist-blocking-state
   (let [target-root (install-fixture/init-git-target! (install-fixture/make-temp-dir))]
     (try
       (install/install! target-root)
       (task-type-manager/create-task-type! target-root :impl)
+      (install-fixture/create-agent-home-configs! target-root)
       (domain/create-collection! target-root
                                  {:id "impl-backlog"
                                   :task-type :impl

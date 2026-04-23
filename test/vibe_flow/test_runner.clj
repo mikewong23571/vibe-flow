@@ -4,6 +4,7 @@
    [vibe-flow.core-test]
    [vibe-flow.governance.checks-test]
    [vibe-flow.management.domain-test]
+   [vibe-flow.management.system-task-type-test]
    [vibe-flow.management.task-type-test]
    [vibe-flow.runtime.launcher-test]
    [vibe-flow.runtime.mgr-run-test]
@@ -16,6 +17,7 @@
         (test/run-tests 'vibe-flow.core-test
                         'vibe-flow.governance.checks-test
                         'vibe-flow.management.domain-test
+                        'vibe-flow.management.system-task-type-test
                         'vibe-flow.management.task-type-test
                         'vibe-flow.runtime.launcher-test
                         'vibe-flow.runtime.mgr-run-test

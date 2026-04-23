@@ -25,6 +25,7 @@
     (try
       (install/install! target-root)
       (task-type-manager/create-task-type! target-root :impl)
+      (install-fixture/create-agent-home-configs! target-root)
       (domain/create-collection! target-root
                                  {:id "impl-backlog"
                                   :task-type :impl
@@ -134,6 +135,7 @@
     (try
       (install/install! target-root)
       (task-type-manager/create-task-type! target-root :impl)
+      (install-fixture/create-agent-home-configs! target-root)
       (spit (definition/prompt-path target-root :impl :mgr)
             (task-type-manager/render-template
              (:mgr task-type-manager/legacy-prompt-skeletons)
@@ -152,6 +154,7 @@
     (try
       (install/install! target-root)
       (task-type-manager/create-task-type! target-root :impl)
+      (install-fixture/create-agent-home-configs! target-root)
       (domain/create-collection! target-root
                                  {:id "impl-backlog"
                                   :task-type :impl
@@ -251,6 +254,45 @@
                                                 "--target" "relative/repo"])))))
       (finally
         (install-fixture/delete-tree! caller-root)))))
+
+(deftest system-governed-cli-roadmap-is-structured-and-explicit
+  (testing "planned provider whitelist and registry contract are exposed as governed surface metadata"
+    (let [providers (system/governed-cli-provider-whitelist)
+          contract (system/governed-cli-registry-contract)
+          whitelist (system/governed-cli-command-whitelist)
+          design-doc (system/governed-product-cli-design-doc-path)]
+      (is (= #{:tasks :collections :task-types :agent-homes :doctor}
+             (set (map :id providers))))
+      (is (= "docs/plan/product-cli-facade-governance.md" design-doc))
+      (is (= design-doc (:design-doc (first providers))))
+      (is (= [:list :show]
+             (:subcommands (first (filter #(= :tasks (:id %)) providers)))))
+      (is (= :planned (:status (first (filter #(= :agent-homes (:id %)) providers)))))
+      (is (= 'vibe-flow.product.cli.registry (:registry-ns contract)))
+      (is (= #{:resource-family :singleton-command} (:allowed-kinds contract)))
+      (is (= design-doc (:design-doc contract)))
+      (is (= design-doc (:design-doc whitelist)))
+      (is (= :implemented (get-in whitelist [:implemented "install" :status])))
+      (is (= :planned (get-in whitelist [:planned :registry-contract :status])))))
+
+  (testing "planned product CLI registry functions fail with structured not-implemented metadata"
+    (try
+      (system/load-governed-cli-registry!)
+      (is false "Expected load-governed-cli-registry! to throw")
+      (catch clojure.lang.ExceptionInfo ex
+        (is (= "Governed product CLI command is not implemented yet."
+               (.getMessage ex)))
+        (is (= :load-governed-cli-registry (:command (ex-data ex))))
+        (is (= :registry-contract (:kind (ex-data ex))))
+        (is (= :planned (:status (ex-data ex))))))
+    (try
+      (system/dispatch-governed-cli-command! :tasks "/tmp/target" {:subcommand :list})
+      (is false "Expected dispatch-governed-cli-command! to throw")
+      (catch clojure.lang.ExceptionInfo ex
+        (is (= :dispatch-governed-cli-command (:command (ex-data ex))))
+        (is (= :registry-contract (:kind (ex-data ex))))
+        (is (= :tasks (:requested-command (ex-data ex))))
+        (is (= :planned (:status (ex-data ex))))))))
 
 (deftest system-install-toolchain-supports-in-place-reinstall
   (let [temp-home (install-fixture/make-temp-dir)

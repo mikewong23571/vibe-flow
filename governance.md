@@ -182,6 +182,14 @@ store 的默认职责是：
 * runtime 决策
 * definition lifecycle 规则
 
+TODO:
+
+* 按 [docs/plan/product-cli-facade-governance.md](/home/mikewong/proj/main/vibe-flow/docs/plan/product-cli-facade-governance.md) 把正式 CLI surface 纳入治理白名单，而不是让用户命令在 `-main` 中自由增长
+* 按该设计文档优先收敛稳定资源族命令，例如 `tasks`、`collections`、`task-types`、`agent-homes`
+* 按该设计文档把 `doctor` 这类跨资源诊断入口作为少量特例命令单独白名单管理
+* 当 product CLI 继续扩张时，按该设计文档把命令白名单和 provider/registry 合同从命令分发实现中拆出，做成可检查的正式治理对象
+* 当 `vibe-flow.product.cli.*` namespace 落地时，按该设计文档把它们治理成 facade adapter，而不是业务规则所有者
+
 ### Rule 7. 外部执行身份必须来自持久化状态，而不是调用方输入
 
 对于会回写 workflow 状态的 callback / wrapper / install 记录：

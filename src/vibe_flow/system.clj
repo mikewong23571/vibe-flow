@@ -135,6 +135,16 @@
   ([target-root]
    (install/install! target-root)))
 
+(defn list-task-types
+  ([]
+   (list-task-types "."))
+  ([target-root]
+   (task-type-manager/list-task-types target-root)))
+
+(defn inspect-task-type
+  ([target-root task-type]
+   (task-type-manager/inspect-task-type target-root task-type)))
+
 (defn parse-launcher [value]
   (case value
     "mock" :mock
@@ -173,11 +183,19 @@
         options (parse-kv-args more)]
     {:command (or command "help")
      :target (resolve-cli-target (get options "--target"))
+     :task-type (get options "--task-type")
      :task-id (get options "--task-id")
      :mgr-run-id (get options "--mgr-run-id")
      :worker-launcher (get options "--worker-launcher")
      :decision (get options "--decision")
      :reason (get options "--reason")}))
+
+(defn required-cli-option [command option-name value]
+  (when-not value
+    (throw (ex-info "Missing required CLI option."
+                    {:command command
+                     :option option-name})))
+  value)
 
 (defn mgr-advance! [target-root task-id mgr-run-id decision reason]
   (workflow-control/advance-task! target-root
@@ -186,17 +204,112 @@
                                   (parse-decision decision)
                                   reason))
 
+(defn planned-product-cli-command! [command metadata]
+  (throw (ex-info "Governed product CLI command is not implemented yet."
+                  (assoc metadata
+                         :command command
+                         :status :planned
+                         :surface :product-cli))))
+
+(defn governed-product-cli-design-doc-path []
+  "docs/plan/product-cli-facade-governance.md")
+
+(defn governed-cli-provider-whitelist []
+  [{:id :tasks
+    :kind :resource-family
+    :status :planned
+    :provider-ns 'vibe-flow.product.cli.tasks
+    :provider-fn 'command-spec
+    :subcommands [:list :show]
+    :design-doc (governed-product-cli-design-doc-path)}
+   {:id :collections
+    :kind :resource-family
+    :status :planned
+    :provider-ns 'vibe-flow.product.cli.collections
+    :provider-fn 'command-spec
+    :subcommands [:list :show]
+    :design-doc (governed-product-cli-design-doc-path)}
+   {:id :task-types
+    :kind :resource-family
+    :status :planned
+    :provider-ns 'vibe-flow.product.cli.task-types
+    :provider-fn 'command-spec
+    :subcommands [:list :show]
+    :design-doc (governed-product-cli-design-doc-path)}
+   {:id :agent-homes
+    :kind :resource-family
+    :status :planned
+    :provider-ns 'vibe-flow.product.cli.agent-homes
+    :provider-fn 'command-spec
+    :subcommands [:list :show]
+    :design-doc (governed-product-cli-design-doc-path)}
+   {:id :doctor
+    :kind :singleton-command
+    :status :planned
+    :provider-ns 'vibe-flow.product.cli.doctor
+    :provider-fn 'command-spec
+    :design-doc (governed-product-cli-design-doc-path)}])
+
+(defn governed-cli-registry-contract []
+  {:status :planned
+   :design-doc (governed-product-cli-design-doc-path)
+   :registry-ns 'vibe-flow.product.cli.registry
+   :provider-whitelist-fn 'governed-cli-provider-whitelist
+   :allowed-kinds #{:resource-family :singleton-command}
+   :required-provider-fields [:id :kind :status :provider-ns :provider-fn :design-doc]
+   :resource-family-required-fields [:subcommands]
+   :singleton-command-required-fields []})
+
+(defn load-governed-cli-registry! []
+  (planned-product-cli-command! :load-governed-cli-registry
+                                {:kind :registry-contract
+                                 :contract (governed-cli-registry-contract)}))
+
+(defn dispatch-governed-cli-command!
+  ([command]
+   (dispatch-governed-cli-command! command nil {}))
+  ([command target-root options]
+   (planned-product-cli-command! :dispatch-governed-cli-command
+                                 {:kind :registry-contract
+                                  :requested-command command
+                                  :target-root target-root
+                                  :options options
+                                  :contract (governed-cli-registry-contract)})))
+
+(defn governed-cli-command-whitelist []
+  {:implemented {"help" {:status :implemented
+                         :kind :singleton-command}
+                 "install" {:status :implemented
+                            :kind :singleton-command}
+                 "install-target" {:status :implemented
+                                   :kind :singleton-command}
+                 "bootstrap" {:status :implemented
+                              :kind :singleton-command}
+                 "list-task-types" {:status :implemented
+                                    :kind :singleton-command}
+                 "inspect-task-type" {:status :implemented
+                                      :kind :singleton-command}
+                 "mgr-advance" {:status :implemented
+                                :kind :singleton-command}}
+   :design-doc (governed-product-cli-design-doc-path)
+   :planned {:providers (governed-cli-provider-whitelist)
+             :registry-contract (governed-cli-registry-contract)}})
+
 (defn usage-lines []
   ["Usage:"
    "  vibe-flow install"
    "  vibe-flow install-target [--target <repo>]"
    "  vibe-flow bootstrap [--target <repo>]"
+   "  vibe-flow list-task-types [--target <repo>]"
+   "  vibe-flow inspect-task-type [--target <repo>] --task-type <id>"
    "  vibe-flow mgr-advance --target <repo> --task-id <id> --mgr-run-id <id> --decision <impl|review|refine|done|error> --reason <text>"
    ""
    "Examples:"
    "  vibe-flow install"
    "  vibe-flow install-target --target /path/to/repo"
    "  vibe-flow bootstrap --target /path/to/repo"
+   "  vibe-flow list-task-types --target /path/to/repo"
+   "  vibe-flow inspect-task-type --target /path/to/repo --task-type impl"
    "  vibe-flow mgr-advance --target /path/to/repo --task-id task-1 --mgr-run-id mgr-1 --decision impl --reason \"start implementation\""])
 
 (defn print-usage! []
@@ -216,9 +329,14 @@
                        :inspect-task domain/inspect-task
                        :validate-task! domain/validate-task!}
    :task-type-management {:create! task-type-manager/create-task-type!
-                          :list task-type-manager/list-task-types
-                          :inspect task-type-manager/inspect-task-type
+                          :list list-task-types
+                          :inspect inspect-task-type
                           :register! task-type-manager/register-installed-task-type!}
+   :product-cli-governance {:provider-whitelist governed-cli-provider-whitelist
+                            :registry-contract governed-cli-registry-contract
+                            :load-registry! load-governed-cli-registry!
+                            :dispatch! dispatch-governed-cli-command!
+                            :whitelist governed-cli-command-whitelist}
    :runtime {:launch! launcher/launch!}
    :workflow-control {:select-runnable-task workflow-control/select-runnable-task
                       :create-mgr-run! workflow-control/create-mgr-run!
@@ -232,12 +350,15 @@
                   :load-toolchain system-store/load-toolchain}})
 
 (defn -main [& args]
-  (let [{:keys [command target task-id mgr-run-id decision reason]} (parse-cli-args args)]
+  (let [{:keys [command target task-type task-id mgr-run-id decision reason]} (parse-cli-args args)]
     (case command
       "help" (print-usage!)
       "install" (prn (install-toolchain!))
       "install-target" (prn (install-target! target))
       "bootstrap" (prn (bootstrap-self-host! target))
+      "list-task-types" (prn (list-task-types target))
+      "inspect-task-type" (prn (inspect-task-type target
+                                                  (required-cli-option command "--task-type" task-type)))
       "mgr-advance" (prn (mgr-advance! target task-id mgr-run-id decision reason))
       (throw (ex-info "Unknown vibe-flow command."
                       {:command command

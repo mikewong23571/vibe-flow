@@ -175,6 +175,14 @@
    :responsibility "Prepare and finalize mgr_run runtime records."
    :split-axis "Split prompt materialization from external mgr adapter concerns if mgr runtime support expands."}
 
+  "vibe-flow.platform.runtime.agent-home-adapter"
+  {:layer :support-substrate
+   :volatility :high
+   :module-kind :adapter
+   :complexity :simple
+   :responsibility "Validate target-local agent home readiness before launching mgr or worker runtimes."
+   :split-axis "Split provider-specific readiness checks once non-Codex agent homes need different contracts."}
+
   "vibe-flow.platform.runtime.run"
   {:layer :runtime-integration
    :volatility :high
@@ -294,6 +302,14 @@
    :complexity :simple
    :responsibility "mgr_run wrapper regression tests for callback command quoting."
    :stability-role "mgr_run tests may evolve with runtime integration while staying focused on persisted callback safety."}
+
+  "vibe-flow.management.system-task-type-test"
+  {:layer :test
+   :volatility :medium
+   :module-kind :test
+   :complexity :simple
+   :responsibility "System-level task_type CLI management regression tests."
+   :stability-role "Task type CLI tests may evolve with product commands while staying focused on user-visible behavior."}
 
   "vibe-flow.core-test"
   {:layer :test

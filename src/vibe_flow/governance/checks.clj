@@ -120,6 +120,28 @@
               ns-name
               (str "Manifest entry exists for `" ns-name "` but no matching source file was found."))))))
 
+(defn source-defines-defn? [path fn-name]
+  (let [text (slurp path)
+        pattern (re-pattern (str "\\(defn\\s+" (java.util.regex.Pattern/quote fn-name) "(\\s|\\[)"))]
+    (boolean (re-find pattern text))))
+
+(defn product-cli-governance-issues []
+  (let [path rules/product-cli-governance-path]
+    (cond
+      (not (file-exists? path))
+      [(issue :product-cli-governance
+              :error
+              path
+              "Missing product CLI routing surface.")]
+
+      :else
+      (for [fn-name rules/product-cli-governance-required-defns
+            :when (not (source-defines-defn? path fn-name))]
+        (issue :product-cli-governance
+               :error
+               path
+               (str "Product CLI governance function `" fn-name "` is missing from `" path "`."))))))
+
 (defn module-contract-issues []
   (mapcat
    (fn [{:keys [file]}]
@@ -288,6 +310,7 @@
   (->> [(project-layout-issues)
         (pre-commit-issues)
         (module-manifest-issues)
+        (product-cli-governance-issues)
         (module-contract-issues)
         (namespace-issues)
         (sample-boundary-issues)

@@ -43,6 +43,18 @@
           "commit" "-m" "Initial target commit")
   target-root)
 
+(def default-agent-home-names [:mgr_codex :impl_codex :review_codex :refine_codex])
+
+(defn create-agent-home-configs!
+  ([target-root]
+   (create-agent-home-configs! target-root default-agent-home-names))
+  ([target-root home-names]
+   (doseq [home-name home-names]
+     (let [home-dir (paths/agent-home-path target-root home-name)]
+       (.mkdirs home-dir)
+       (spit (io/file home-dir "config.toml")
+             "model_provider = \"test\"\n")))))
+
 (defn with-fake-toolchain-command [test-fn]
   (let [root (make-temp-dir)
         command-file (io/file root "bin" toolchain-paths/command-name)]

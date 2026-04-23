@@ -3,6 +3,7 @@
    [clojure.java.io :as io]
    [clojure.string :as str]
    [vibe-flow.definition.task-type :as task-type]
+   [vibe-flow.platform.runtime.agent-home-adapter :as agent-home-adapter]
    [vibe-flow.platform.state.system-store :as system-store]
    [vibe-flow.platform.support.shell :as shell]
    [vibe-flow.platform.support.time :as time]
@@ -76,10 +77,32 @@
     (.setExecutable ^java.io.File path true)
     path))
 
+(defn mgr-home-context [target-root task]
+  (when-let [mgr-home (task-type/mgr-home target-root (:task-type task))]
+    {:role :mgr
+     :stage :mgr
+     :home mgr-home
+     :path (str (paths/agent-home-path target-root mgr-home))}))
+
+(defn assert-mgr-home-ready! [target-root task]
+  (when-let [home-context (mgr-home-context target-root task)]
+    (try
+      ;; TODO: Add a first-class target setup/doctor flow that tells users how to
+      ;; provision the required Codex mgr home before their first codex mgr_run.
+      (agent-home-adapter/assert-agent-home-ready! home-context)
+      (catch clojure.lang.ExceptionInfo ex
+        (throw (ex-info "Task type mgr home is not ready."
+                        (assoc (ex-data ex)
+                               :task-id (:id task)
+                               :task-type (task-type/task-type-id (:task-type task)))
+                        ex))))))
+
 (defn prepare-mgr-run!
   ([target-root task launcher]
    (prepare-mgr-run! target-root task launcher launcher))
   ([target-root task launcher worker-launcher]
+   (when (= :codex launcher)
+     (assert-mgr-home-ready! target-root task))
    (let [mgr-run-id (uuid)
          workflow-command* (workflow-command target-root)
          prompt-path (paths/mgr-run-prompt-path target-root mgr-run-id)
