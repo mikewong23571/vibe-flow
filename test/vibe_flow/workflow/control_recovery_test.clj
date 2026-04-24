@@ -9,6 +9,7 @@
    [vibe-flow.platform.state.mgr-run-store :as mgr-run-store]
    [vibe-flow.platform.state.run-store :as run-store]
    [vibe-flow.platform.state.task-store :as task-store]
+   [vibe-flow.platform.state.task-runtime-store :as task-runtime-store]
    [vibe-flow.platform.support.edn :as edn]
    [vibe-flow.platform.target.install :as install]
    [vibe-flow.platform.target.paths :as paths]
@@ -16,6 +17,10 @@
    [vibe-flow.workflow.control :as control]))
 
 (use-fixtures :each install-fixture/with-fake-toolchain-command)
+
+(defn load-task-view [target-root task-id]
+  (task-runtime-store/hydrate-task target-root
+                                   (task-store/load-task target-root task-id)))
 
 (deftest failed-launch-still-persists-prepared-run-for-recovery
   (let [target-root (install-fixture/init-git-target! (install-fixture/make-temp-dir))]
@@ -149,7 +154,7 @@
              java.io.FileNotFoundException
              #"missing.txt"
              (control/run-once! target-root :mock :mock)))
-        (let [task (task-store/load-task target-root "impl-task-1")
+        (let [task (load-task-view target-root "impl-task-1")
               mgr-runs (mgr-run-store/load-mgr-runs target-root)
               runs (run-store/task-runs target-root "impl-task-1")]
           (is (= :error (:stage task)))
@@ -179,7 +184,7 @@
                             :success-criteria ["Feature behavior is implemented."]})
       (testing "missing codex worker home becomes a finalized failed run"
         (let [result (control/run-once! target-root :codex :mock)
-              task (task-store/load-task target-root "impl-task-1")
+              task (load-task-view target-root "impl-task-1")
               runs (run-store/task-runs target-root "impl-task-1")
               run (first runs)]
           (is (= :error (:next-stage result)))
@@ -246,7 +251,7 @@
                        :control :error
                        :message "codex mgr failed"})]
         (let [result (control/run-once! target-root :mock :codex)
-              task (task-store/load-task target-root "impl-task-codex-mgr-failure")
+              task (load-task-view target-root "impl-task-codex-mgr-failure")
               mgr-runs (mgr-run-store/load-mgr-runs target-root)
               mgr-run (first mgr-runs)]
           (is (= :error (:next-stage result)))
@@ -289,7 +294,7 @@
                       {:ok? true
                        :message "mgr callback invoked"})]
         (let [result (control/run-once! target-root :mock :codex)
-              task (task-store/load-task target-root "impl-task-codex-mgr")
+              task (load-task-view target-root "impl-task-codex-mgr")
               mgr-run (mgr-run-store/load-mgr-run target-root (:mgr-run-id result))]
           (is (= :impl (:decision result)))
           (is (= :awaiting-review (:next-stage result)))

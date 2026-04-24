@@ -92,8 +92,6 @@
 (defn create-task! [target-root attrs]
   (let [task (validate-task! target-root
                              (merge {:stage :todo
-                                     :run-count 0
-                                     :mgr-count 0
                                      :review-count 0
                                      :created-at (time/now)
                                      :updated-at (time/now)}

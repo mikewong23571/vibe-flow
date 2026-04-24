@@ -179,7 +179,7 @@
                                    "--worker-launcher" "codex"
                                    "--decision" "impl"
                                    "--reason" "launch implementation"))
-            updated-task (domain/inspect-task target-root "impl-task-cli")
+            updated-task (get-in (core/inspect-task target-root "impl-task-cli") [:task])
             updated-mgr-run (mgr-run-store/load-mgr-run target-root (:id mgr-run))
             latest-run (run-store/load-run target-root (:latest-run updated-task))]
         (testing "mgr run prompt and wrapper expose the workflow callback path"
@@ -229,7 +229,7 @@
                                      "--worker-launcher" "mock"
                                      "--poll-interval-ms" "0"
                                      "--max-steps" "4")))
-            task (domain/inspect-task target-root "impl-task-mgr-start")]
+            task (get-in (core/inspect-task target-root "impl-task-mgr-start") [:task])]
         (is (re-find #":status :max-steps-reached" output))
         (is (re-find #":steps 4" output))
         (is (= :done (:stage task)))

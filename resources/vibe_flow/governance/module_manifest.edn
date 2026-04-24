@@ -95,6 +95,14 @@
    :responsibility "Small shell quoting helpers for generated command scripts."
    :stability-role "Shell argument quoting should stay centralized and predictable."}
 
+  "vibe-flow.platform.support.task-fields"
+  {:layer :support-substrate
+   :volatility :low
+   :module-kind :foundation
+   :complexity :simple
+   :responsibility "Shared task field partition helpers for domain and runtime persistence."
+   :stability-role "Task field partitioning should remain a tiny data contract used by persistence stores."}
+
   "vibe-flow.platform.toolchain.paths"
   {:layer :support-substrate
    :volatility :low
@@ -150,6 +158,14 @@
    :complexity :simple
    :responsibility "Persistence helpers for task domain records."
    :stability-role "Task persistence should remain a thin durable store."}
+
+  "vibe-flow.platform.state.task-runtime-store"
+  {:layer :state-persistence
+   :volatility :low
+   :module-kind :store
+   :complexity :simple
+   :responsibility "Persistence helpers for target-local task runtime summaries."
+   :stability-role "Task runtime persistence should remain a thin local store separate from domain task records."}
 
   "vibe-flow.platform.state.run-store"
   {:layer :state-persistence

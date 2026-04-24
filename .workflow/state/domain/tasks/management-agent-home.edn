@@ -1,4 +1,4 @@
-{:updated-at "2026-04-23T18:00:00Z",
+{:updated-at "2026-04-23T18:15:00Z",
  :constraints
  ["Align any new CLI/API surface with docs/plan/product-cli-facade-governance.md."
   "Keep agent-home commands behind the governed CLI facade/provider-registry direction."
@@ -22,6 +22,4 @@
  :task-type :impl,
  :id "management-agent-home",
  :review-count 0,
- :created-at "2026-04-23T16:17:28.626799280Z",
- :mgr-count 0,
- :run-count 0}
+ :created-at "2026-04-23T16:17:28.626799280Z"}

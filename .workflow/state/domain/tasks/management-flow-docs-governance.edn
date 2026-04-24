@@ -1,4 +1,4 @@
-{:updated-at "2026-04-23T18:00:00Z",
+{:updated-at "2026-04-23T18:15:00Z",
  :constraints
  ["Use docs/plan/product-cli-facade-governance.md as the design reference for CLI wording and governance notes."
   "Do not document commands that are not implemented."
@@ -22,6 +22,4 @@
  :task-type :impl,
  :id "management-flow-docs-governance",
  :review-count 0,
- :created-at "2026-04-23T16:17:28.652000866Z",
- :mgr-count 0,
- :run-count 0}
+ :created-at "2026-04-23T16:17:28.652000866Z"}

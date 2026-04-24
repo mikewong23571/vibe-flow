@@ -8,6 +8,7 @@
    [vibe-flow.platform.state.mgr-run-store :as mgr-run-store]
    [vibe-flow.platform.state.run-store :as run-store]
    [vibe-flow.platform.state.task-store :as task-store]
+   [vibe-flow.platform.state.task-runtime-store :as task-runtime-store]
    [vibe-flow.platform.support.edn :as edn]
    [vibe-flow.platform.target.install :as install]
    [vibe-flow.target.install-test :as install-fixture]
@@ -16,6 +17,10 @@
    [vibe-flow.workflow.control :as control]))
 
 (use-fixtures :each install-fixture/with-fake-toolchain-command)
+
+(defn load-task-view [target-root task-id]
+  (task-runtime-store/hydrate-task target-root
+                                   (task-store/load-task target-root task-id)))
 
 (deftest mock-workflow-run-loop-persists-task-mgr-run-and-run-state
   (let [target-root (install-fixture/init-git-target! (install-fixture/make-temp-dir))]
@@ -37,7 +42,9 @@
                             :success-criteria ["Feature behavior is implemented."]})
       (testing "mock mgr and mock worker complete the minimal workflow loop"
         (let [results (control/run-loop! target-root :mock :mock 4)
-              task (task-store/load-task target-root "impl-task-1")
+              domain-task (task-store/load-task target-root "impl-task-1")
+              task (load-task-view target-root "impl-task-1")
+              runtime (task-runtime-store/load-task-runtime target-root "impl-task-1")
               runs (run-store/task-runs target-root "impl-task-1")
               mgr-runs (mgr-run-store/load-mgr-runs target-root)
               latest-run (last runs)]
@@ -52,6 +59,10 @@
           (is (= :pass (:latest-worker-control task)))
           (is (string? (:latest-review-output task)))
           (is (string? (:repo-head task)))
+          (is (empty? (select-keys domain-task task-runtime-store/runtime-fields)))
+          (is (= 4 (:mgr-count runtime)))
+          (is (= 4 (:run-count runtime)))
+          (is (= (:latest-run task) (:latest-run runtime)))
           (is (= :mock (:launcher latest-run)))
           (is (= :review (:worker latest-run)))
           (is (string? (get-in latest-run [:prompt :text])))
@@ -59,6 +70,26 @@
           (is (string? (get-in latest-run [:worktree :dir])))
           (is (string? (get-in latest-run [:heads :input])))
           (is (string? (get-in latest-run [:heads :output])))))
+
+      (testing "task read models filter polluted persisted state"
+        (let [task-path (paths/task-path target-root "impl-task-1")
+              runtime-path (paths/task-runtime-path target-root "impl-task-1")
+              poisoned-domain (assoc (edn/read-edn task-path nil)
+                                     :latest-run "domain-poison"
+                                     :run-count 99)
+              poisoned-runtime (assoc (edn/read-edn runtime-path nil)
+                                      :stage :todo
+                                      :task-type :poisoned
+                                      :repo-head "runtime-poison")]
+          (edn/write-edn! task-path poisoned-domain)
+          (edn/write-edn! runtime-path poisoned-runtime)
+          (let [domain-task (task-store/load-task target-root "impl-task-1")
+                task-view (load-task-view target-root "impl-task-1")]
+            (is (nil? (:latest-run domain-task)))
+            (is (nil? (:run-count domain-task)))
+            (is (= :done (:stage task-view)))
+            (is (= :impl (:task-type task-view)))
+            (is (not= "runtime-poison" (:repo-head task-view))))))
 
       (testing "advance-task! rejects mgr_run ids that belong to another task"
         (domain/create-task! target-root
@@ -87,7 +118,7 @@
         (let [mgr-run (control/create-mgr-run! target-root
                                                (domain/inspect-task target-root "impl-task-1")
                                                :mock)
-              mgr-count-before (:mgr-count (task-store/load-task target-root "impl-task-1"))]
+              mgr-count-before (:mgr-count (load-task-view target-root "impl-task-1"))]
           (control/advance-task! target-root
                                  "impl-task-1"
                                  (:id mgr-run)
@@ -102,7 +133,7 @@
                                       :done
                                       "complete")))
           (is (= (inc mgr-count-before)
-                 (:mgr-count (task-store/load-task target-root "impl-task-1"))))))
+                 (:mgr-count (load-task-view target-root "impl-task-1"))))))
 
       (testing "advance-task! rejects unsupported mgr decisions before mutating task state"
         (domain/create-task! target-root
@@ -114,7 +145,7 @@
         (let [mgr-run (control/create-mgr-run! target-root
                                                (domain/inspect-task target-root "impl-task-invalid-decision")
                                                :mock)
-              task-before (task-store/load-task target-root "impl-task-invalid-decision")]
+              task-before (load-task-view target-root "impl-task-invalid-decision")]
           (is (thrown-with-msg?
                clojure.lang.ExceptionInfo
                #"Unsupported mgr decision"
@@ -123,7 +154,7 @@
                                       (:id mgr-run)
                                       :bogus
                                       "bad input")))
-          (let [task-after (task-store/load-task target-root "impl-task-invalid-decision")
+          (let [task-after (load-task-view target-root "impl-task-invalid-decision")
                 mgr-run-after (mgr-run-store/load-mgr-run target-root (:id mgr-run))]
             (is (= (:stage task-before) (:stage task-after)))
             (is (= (:mgr-count task-before) (:mgr-count task-after)))
@@ -152,7 +183,7 @@
                                       (:id stale-mgr-run)
                                       :done
                                       "late duplicate")))
-          (let [task-after (task-store/load-task target-root "impl-task-stale-mgr")
+          (let [task-after (load-task-view target-root "impl-task-stale-mgr")
                 runs (run-store/task-runs target-root "impl-task-stale-mgr")]
             (is (= 1 (:run-count task-after)))
             (is (= 1 (count runs)))
@@ -270,7 +301,7 @@
                (:id (control/select-runnable-task target-root {:task-type :ops}))))
         (let [results (control/run-loop! target-root :mock :mock 4 {:task-type :impl})
               impl-task (task-store/load-task target-root "impl-task-1")
-              ops-task (task-store/load-task target-root "ops-task-1")]
+              ops-task (load-task-view target-root "ops-task-1")]
           (is (= 4 (count results)))
           (is (= :done (:stage impl-task)))
           (is (= :todo (:stage ops-task)))

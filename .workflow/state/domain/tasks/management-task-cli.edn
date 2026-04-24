@@ -1,4 +1,4 @@
-{:updated-at "2026-04-23T18:00:00Z",
+{:updated-at "2026-04-24T07:53:42.246128Z",
  :constraints
  ["Use docs/plan/product-cli-facade-governance.md as the command-surface design context."
   "Keep task/collection commands aligned with the governed CLI facade/provider-registry direction."
@@ -23,6 +23,4 @@
  :task-type :impl,
  :id "management-task-cli",
  :review-count 0,
- :created-at "2026-04-23T16:17:28.604237219Z",
- :mgr-count 0,
- :run-count 0}
+ :created-at "2026-04-23T16:17:28.604237219Z"}

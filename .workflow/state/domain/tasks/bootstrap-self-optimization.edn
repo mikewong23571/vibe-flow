@@ -1,10 +1,11 @@
-{:updated-at "2026-04-23T06:19:27.942882143Z",
+{:updated-at "2026-04-24T07:43:57.507534Z",
  :constraints
  ["Do not break the formal workflow layout under .workflow/."
   "Do not overwrite existing user changes without an explicit task decision."
   "Preserve governance and test coverage while evolving the system."],
- :stage :todo,
+ :stage :done,
  :collection-id "self-improvement",
+ :repo-head "39c7e571cb494d0e1581aa96e844583b87b89062",
  :success-criteria
  ["The repository can self-host the workflow state in .workflow/."
   "There is a runnable backlog collection bound to the installed impl task_type."
@@ -17,7 +18,5 @@
   "Keep changes aligned with design.md, architecture.md, and governance.md."],
  :task-type :impl,
  :id "bootstrap-self-optimization",
- :review-count 0,
- :created-at "2026-04-23T06:19:27.942850113Z",
- :mgr-count 0,
- :run-count 0}
+ :review-count 1,
+ :created-at "2026-04-23T06:19:27.942850113Z"}

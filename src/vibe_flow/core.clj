@@ -5,6 +5,7 @@
    [vibe-flow.platform.state.mgr-run-store :as mgr-run-store]
    [vibe-flow.platform.state.run-store :as run-store]
    [vibe-flow.platform.state.system-store :as system-store]
+   [vibe-flow.platform.state.task-runtime-store :as task-runtime-store]
    [vibe-flow.platform.target.paths :as paths]
    [vibe-flow.workflow.control :as workflow-control]))
 
@@ -23,8 +24,11 @@
            (filter #(= (:id task) (:task-id %)))
            last)))
 
+(defn task-view [target-root task]
+  (task-runtime-store/hydrate-task target-root task))
+
 (defn inspect-task [target-root task-id]
-  (let [task (domain/inspect-task target-root task-id)]
+  (let [task (task-view target-root (domain/inspect-task target-root task-id))]
     (when task
       {:task task
        :collection (domain/inspect-collection target-root (:collection-id task))
@@ -36,14 +40,14 @@
   (let [run (run-store/load-run target-root run-id)]
     (when run
       {:run run
-       :task (domain/inspect-task target-root (:task-id run))
+       :task (task-view target-root (domain/inspect-task target-root (:task-id run)))
        :task-type (inspect-task-type target-root (:task-type run))})))
 
 (defn inspect-mgr-run [target-root mgr-run-id]
   (let [mgr-run (mgr-run-store/load-mgr-run target-root mgr-run-id)]
     (when mgr-run
       {:mgr-run mgr-run
-       :task (domain/inspect-task target-root (:task-id mgr-run))
+       :task (task-view target-root (domain/inspect-task target-root (:task-id mgr-run)))
        :task-type (inspect-task-type target-root (:task-type mgr-run))})))
 
 (defn recovery-overview [target-root]

@@ -55,6 +55,12 @@
 (defn local-root [target-root]
   (io/file (workflow-root target-root) "local"))
 
+(defn task-runtime-root [target-root]
+  (io/file (local-root target-root) "task_runtime"))
+
+(defn task-runtime-path [target-root task-id]
+  (io/file (task-runtime-root target-root) (str task-id ".edn")))
+
 (defn runs-root [target-root]
   (io/file (local-root target-root) "runs"))
 
@@ -129,6 +135,7 @@
    (collections-root target-root)
    (tasks-root target-root)
    (local-root target-root)
+   (task-runtime-root target-root)
    (runs-root target-root)
    (mgr-runs-root target-root)
    (agent-homes-root target-root)])
@@ -145,6 +152,7 @@
    :collections-root (str (collections-root target-root))
    :tasks-root (str (tasks-root target-root))
    :local-root (str (local-root target-root))
+   :task-runtime-root (str (task-runtime-root target-root))
    :runs-root (str (runs-root target-root))
    :mgr-runs-root (str (mgr-runs-root target-root))
    :agent-homes-root (str (agent-homes-root target-root))})

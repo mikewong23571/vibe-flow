@@ -6,11 +6,25 @@
    [vibe-flow.platform.runtime.run :as run]
    [vibe-flow.platform.state.mgr-run-store :as mgr-run-store]
    [vibe-flow.platform.state.task-store :as task-store]
+   [vibe-flow.platform.state.task-runtime-store :as task-runtime-store]
    [vibe-flow.platform.state.run-store :as run-store]
    [vibe-flow.platform.support.time :as time]))
 
 (defn task-stage [task]
   (or (:stage task) :todo))
+
+(defn hydrate-task [target-root task]
+  (task-runtime-store/hydrate-task target-root task))
+
+(defn load-task-view [target-root task-id]
+  (hydrate-task target-root (task-store/load-task target-root task-id)))
+
+(defn save-task-state! [target-root task]
+  (task-store/save-task! target-root task)
+  (task-runtime-store/save-task-runtime! target-root
+                                         (:id task)
+                                         (task-runtime-store/runtime-task task))
+  task)
 
 (defn terminal-stage? [stage]
   (contains? #{:done :error} stage))
@@ -122,7 +136,8 @@
   ([target-root task launcher]
    (create-mgr-run! target-root task launcher launcher))
   ([target-root task launcher worker-launcher]
-   (let [record (mgr-run/prepare-mgr-run! target-root task launcher worker-launcher)]
+   (let [task (hydrate-task target-root task)
+         record (mgr-run/prepare-mgr-run! target-root task launcher worker-launcher)]
      (mgr-run-store/save-mgr-run! target-root record)
      record)))
 
@@ -136,7 +151,7 @@
      :message "DECISION: error\nREASON: no worker is defined for the current task stage."}))
 
 (defn mgr-run-summary [target-root task-id mgr-run-id]
-  (let [task (task-store/load-task target-root task-id)
+  (let [task (load-task-view target-root task-id)
         mgr-run-record (mgr-run-store/load-mgr-run target-root mgr-run-id)
         latest-run-id (:latest-run task)
         latest-run (when latest-run-id
@@ -150,10 +165,11 @@
      :worktree (get-in latest-run [:worktree :dir])}))
 
 (defn finalize-mgr-launch-error! [target-root task mgr-run-record launch-result]
-  (let [finalized-mgr-run (mgr-run/finalize-mgr-run! mgr-run-record launch-result)
+  (let [task (hydrate-task target-root task)
+        finalized-mgr-run (mgr-run/finalize-mgr-run! mgr-run-record launch-result)
         updated-task (task-error-update task (:message launch-result))]
     (mgr-run-store/save-mgr-run! target-root finalized-mgr-run)
-    (task-store/save-task! target-root updated-task)
+    (save-task-state! target-root updated-task)
     {:task-id (:id updated-task)
      :mgr-run-id (:id finalized-mgr-run)
      :decision :error
@@ -179,17 +195,18 @@
                      :task-id (:id task)}))))
 
 (defn apply-mgr-decision! [target-root task mgr-run-record decision message worker-launcher]
-  (let [mgr-result {:ok? true
+  (let [task (hydrate-task target-root task)
+        mgr-result {:ok? true
                     :decision decision
                     :message message}
         finalized-mgr-run (mgr-run/finalize-mgr-run! mgr-run-record mgr-result)
         task-after-mgr (merge-mgr-update task finalized-mgr-run)]
     (mgr-run-store/save-mgr-run! target-root finalized-mgr-run)
-    (task-store/save-task! target-root task-after-mgr)
+    (save-task-state! target-root task-after-mgr)
     (cond
       (= decision :done)
       (let [updated-task (assoc task-after-mgr :stage :done :updated-at (time/now))]
-        (task-store/save-task! target-root updated-task)
+        (save-task-state! target-root updated-task)
         {:task-id (:id updated-task)
          :decision decision
          :next-stage :done
@@ -200,7 +217,7 @@
                                 :stage :error
                                 :error-output message
                                 :updated-at (time/now))]
-        (task-store/save-task! target-root updated-task)
+        (save-task-state! target-root updated-task)
         {:task-id (:id updated-task)
          :decision decision
          :next-stage :error
@@ -210,15 +227,15 @@
       (let [prepared-run (try
                            (run/prepare-run! target-root task-after-mgr decision worker-launcher)
                            (catch Exception ex
-                             (task-store/save-task! target-root
-                                                    (task-error-update task-after-mgr (.getMessage ex)))
+                             (save-task-state! target-root
+                                               (task-error-update task-after-mgr (.getMessage ex)))
                              (throw ex)))
             _ (run-store/save-run! target-root prepared-run)
             launch-result (launcher/launch! target-root worker-launcher decision task-after-mgr prepared-run)
             finalized-run (run/finalize-run! task-after-mgr prepared-run launch-result)
             updated-task (merge-run-update task-after-mgr finalized-run)]
         (run-store/save-run! target-root finalized-run)
-        (task-store/save-task! target-root updated-task)
+        (save-task-state! target-root updated-task)
         {:task-id (:id updated-task)
          :decision decision
          :worker decision
@@ -228,7 +245,7 @@
          :worktree (get-in finalized-run [:worktree :dir])}))))
 
 (defn advance-task! [target-root task-id mgr-run-id decision message]
-  (let [task (task-store/load-task target-root task-id)
+  (let [task (load-task-view target-root task-id)
         mgr-run-record (mgr-run-store/load-mgr-run target-root mgr-run-id)]
     (when-not task
       (throw (ex-info "Task not found."
