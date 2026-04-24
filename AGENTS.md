@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 
-This is a Clojure CLI project for a task-type driven coding-agent workflow toolchain. Production code lives in `src/vibe_flow/`, with layers split by responsibility: `platform/support`, `platform/target`, `platform/state`, `definition`, `management`, `platform/runtime`, `workflow`, and the product surface in `system.clj`. Tests live in `test/vibe_flow/` and should mirror the source namespace being exercised. Runtime and definition resources live under `resources/`, especially `resources/vibe_flow/governance/module_manifest.edn`. Historical exploration belongs in `spikes/`; do not route new production behavior through spike code. Architecture and governance context is documented in `design.md`, `architecture.md`, and `governance.md`.
+This is a Clojure CLI project for a task-type driven coding-agent workflow toolchain. Production code lives in `src/vibe_flow/`, with layers split by responsibility: `platform/support`, `platform/target`, `platform/state`, `definition`, `management`, `platform/runtime`, `workflow`, and the product surface in `system.clj`. Tests live in `test/vibe_flow/` and should mirror the source namespace being exercised. Runtime and definition resources live under `resources/`, especially `resources/vibe_flow/governance/module_manifest.edn`. Historical exploration belongs in `spikes/`; do not route new production behavior through spike code. Architecture and governance context is documented in `docs/design.md`, `docs/architecture.md`, and `docs/governance.md`.
 
 ## Build, Test, and Development Commands
 
@@ -31,4 +31,4 @@ Recent commits use short imperative subjects, sometimes with a conventional pref
 
 ## Security & Configuration Tips
 
-Do not commit `.workflow/local/` machine-local runtime artifacts, credentials, or generated install artifacts. Shared durable state under `.workflow/state/domain/` and `.workflow/state/definitions/` is normally commit-worthy, while `.workflow/state/system/` records should be judged by whether they encode machine-local installation details. Treat `.workflow/` layout changes as product protocol changes and justify them against `governance.md`.
+Do not commit `.workflow/local/` machine-local runtime artifacts, credentials, or generated install artifacts. Shared durable state under `.workflow/state/domain/` and `.workflow/state/definitions/` is normally commit-worthy, while `.workflow/state/system/` records should be judged by whether they encode machine-local installation details. Treat `.workflow/` layout changes as product protocol changes and justify them against `docs/governance.md`.

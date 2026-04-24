@@ -89,6 +89,27 @@
 
 都属于正式治理范围。
 
+### 2.7 Markdown 文档必须有明确归属
+
+Markdown 文件不应散落在仓库任意位置。
+
+正式项目文档应放在：
+
+* `docs/`
+
+历史探索和 spike 记录应放在：
+
+* `spikes/`
+
+仓库根目录只保留两个 Markdown 入口：
+
+* `README.md`
+* `AGENTS.md`
+
+设计、架构、治理、计划、决策、复盘、路线图等 Markdown 文件必须进入 `docs/` 下的合适子目录。
+
+`AGENTS.md` 是例外：它可以出现在仓库任意目录，用于为该目录树提供局部 agent 协作指令。
+
 ## 3. 当前模块层次
 
 当前 repo 应按下面层次理解和治理：
@@ -559,6 +580,19 @@ pre-commit 配置在 repo 根目录：
 
 * 在相邻 namespace subtree 中拆出更清晰的子模块目录
 * 不要继续平铺同类模块
+
+### Machine Rule 10. Markdown Location
+
+Markdown 文件必须位于治理允许的位置：
+
+* 根目录入口文档 `README.md`
+* 任意目录下的 agent 协作协议 `AGENTS.md`
+* `docs/` 下的正式项目文档
+* `spikes/` 下的历史探索文档
+
+新增根目录 Markdown 文件会被治理检查拒绝。计划、决策和路线图文档应放在
+`docs/plan/` 或未来更合适的 `docs/` 子目录中；设计、架构和治理文档应保留在
+`docs/` 下，而不是回到仓库根目录。
 
 ## 11. 评审检查单
 

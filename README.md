@@ -159,9 +159,9 @@ clojure -M:governance
 
 当前正式设计文档：
 
-* [design.md](design.md)
-* [architecture.md](architecture.md)
-* [governance.md](governance.md)
+* [docs/design.md](docs/design.md)
+* [docs/architecture.md](docs/architecture.md)
+* [docs/governance.md](docs/governance.md)
 
 历史探索保存在 `spikes/`：
 

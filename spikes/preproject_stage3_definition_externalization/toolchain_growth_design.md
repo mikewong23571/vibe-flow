@@ -14,7 +14,7 @@
 
 ## 1. 起点
 
-基于 [design.md](/home/mikewong/proj/main/vibe-flow/design.md)、[refine.md](/home/mikewong/proj/main/vibe-flow/docs/archives/refine.deprecated.md) 和 [spikes/preproject_stage3_definition_externalization/learnings.md](/home/mikewong/proj/main/vibe-flow/spikes/preproject_stage3_definition_externalization/learnings.md)，`preproject_stage3_definition_externalization` 已经让下面这些边界开始稳定：
+基于 [design.md](/home/mikewong/proj/main/vibe-flow/docs/design.md)、[refine.md](/home/mikewong/proj/main/vibe-flow/docs/archives/refine.deprecated.md) 和 [spikes/preproject_stage3_definition_externalization/learnings.md](/home/mikewong/proj/main/vibe-flow/spikes/preproject_stage3_definition_externalization/learnings.md)，`preproject_stage3_definition_externalization` 已经让下面这些边界开始稳定：
 
 * `toolchain` 是 workflow control plane 的实现
 * `target` 是 git repository，也是 workflow installation target 和 runtime target

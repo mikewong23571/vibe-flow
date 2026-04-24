@@ -19,7 +19,7 @@
    :goal "Use vibe-flow to improve the vibe-flow repository through its own workflow."
    :scope ["Work only inside this repository."
            "Prefer small, reviewable changes that strengthen the formal product surface."
-           "Keep changes aligned with design.md, architecture.md, and governance.md."]
+           "Keep changes aligned with docs/design.md, docs/architecture.md, and docs/governance.md."]
    :constraints ["Do not break the formal workflow layout under .workflow/."
                  "Do not overwrite existing user changes without an explicit task decision."
                  "Preserve governance and test coverage while evolving the system."]

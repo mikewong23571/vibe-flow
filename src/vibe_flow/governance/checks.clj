@@ -34,9 +34,53 @@
         :when (.isDirectory dir)]
     dir))
 
+(defn ignored-document-dir? [file]
+  (str/starts-with? (.getName file) "."))
+
+(defn visible-document-files
+  ([]
+   (visible-document-files (io/file ".")))
+  ([root]
+   (letfn [(walk [file]
+             (cond
+               (and (.isDirectory file) (ignored-document-dir? file))
+               []
+
+               (.isDirectory file)
+               (mapcat walk (or (seq (.listFiles file)) []))
+
+               :else
+               [file]))]
+     (walk (io/file root)))))
+
+(defn relative-path [root file]
+  (-> (.toPath (io/file root))
+      (.toAbsolutePath)
+      (.normalize)
+      (.relativize (-> (.toPath file)
+                       (.toAbsolutePath)
+                       (.normalize)))
+      str
+      (str/replace java.io.File/separator "/")))
+
+(defn markdown-document-files
+  ([]
+   (markdown-document-files (io/file ".")))
+  ([root]
+   (for [file (visible-document-files root)
+         :when (and (.isFile file)
+                    (str/ends-with? (str/lower-case (.getName file)) ".md"))]
+     (relative-path root file))))
+
 (defn whitelisted-empty-directory? [dir]
   (contains? rules/empty-directory-whitelist
              (ns-inspect/normalize-path dir)))
+
+(defn allowed-markdown-location? [path]
+  (or (contains? rules/root-markdown-document-whitelist path)
+      (contains? rules/anywhere-markdown-document-names
+                 (.getName (io/file path)))
+      (some #(str/starts-with? path %) rules/markdown-document-roots)))
 
 (defn line-count [file]
   (with-open [reader (io/reader file)]
@@ -306,6 +350,17 @@
          [])))
    (governed-directories)))
 
+(defn markdown-location-issues
+  ([]
+   (markdown-location-issues (io/file ".")))
+  ([root]
+   (for [path (markdown-document-files root)
+         :when (not (allowed-markdown-location? path))]
+     (issue :markdown-location
+            :error
+            path
+            (str "Markdown document `" path "` is outside governed document locations.")))))
+
 (defn all-issues []
   (->> [(project-layout-issues)
         (pre-commit-issues)
@@ -317,6 +372,7 @@
         (layer-dependency-issues)
         (file-length-issues)
         (empty-directory-issues)
-        (directory-size-issues)]
+        (directory-size-issues)
+        (markdown-location-issues)]
        (apply concat)
        (sort-by (juxt :severity :path :id))))

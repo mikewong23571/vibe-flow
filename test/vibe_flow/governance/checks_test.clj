@@ -71,3 +71,39 @@
         (doseq [path [system-file root]]
           (when (.exists path)
             (.delete path)))))))
+
+(deftest markdown-location-rule-keeps-documents-in-governed-areas
+  (let [root (.toFile (java.nio.file.Files/createTempDirectory "vibe-flow-governance-docs" (make-array java.nio.file.attribute.FileAttribute 0)))
+        docs-dir (io/file root "docs" "plan")
+        spikes-dir (io/file root "spikes" "experiment")
+        src-dir (io/file root "src" "feature")
+        root-readme (io/file root "README.md")
+        root-agents (io/file root "AGENTS.md")
+        nested-agents (io/file src-dir "AGENTS.md")
+        planned-doc (io/file docs-dir "decision.md")
+        spike-doc (io/file spikes-dir "README.md")
+        stray-doc (io/file root "runtime-decision.md")
+        uppercase-stray-doc (io/file root "runtime-decision.MD")]
+    (try
+      (.mkdirs docs-dir)
+      (.mkdirs spikes-dir)
+      (.mkdirs src-dir)
+      (spit root-readme "# Project\n")
+      (spit root-agents "# Agents\n")
+      (spit nested-agents "# Feature agents\n")
+      (spit planned-doc "# Decision\n")
+      (spit spike-doc "# Spike\n")
+      (spit stray-doc "# Runtime decision\n")
+      (spit uppercase-stray-doc "# Runtime decision\n")
+      (testing "only whitelisted root docs and dedicated document roots are allowed"
+        (let [issues (checks/markdown-location-issues root)
+              issue-paths (set (map :path issues))]
+          (is (= 2 (count issues)))
+          (is (every? #(= :markdown-location (:id %)) issues))
+          (is (= #{"runtime-decision.md" "runtime-decision.MD"} issue-paths))))
+      (finally
+        (doseq [path [uppercase-stray-doc stray-doc spike-doc planned-doc nested-agents
+                      root-agents root-readme src-dir spikes-dir docs-dir (io/file root "src")
+                      (io/file root "spikes") (io/file root "docs") root]]
+          (when (.exists path)
+            (.delete path)))))))

@@ -1,6 +1,6 @@
 # Refine: Final System Layering And Module Split
 
-这份文档基于 `design.md`、`architecture.md` 和 `preproject_stage1_minimal_workflow` 的 learnings，回答一个更接近正式实现的问题：
+这份文档基于 `docs/design.md`、`docs/architecture.md` 和 `preproject_stage1_minimal_workflow` 的 learnings，回答一个更接近正式实现的问题：
 
 **如果把这个系统继续做下去，最终应该如何分层，如何切分模块？**
 

@@ -7,9 +7,9 @@
   ["deps.edn"
    ".pre-commit-config.yaml"
    "README.md"
-   "design.md"
-   "architecture.md"
-   "governance.md"
+   "docs/design.md"
+   "docs/architecture.md"
+   "docs/governance.md"
    "src"
    "test"
    "resources"
@@ -71,6 +71,16 @@
 (def empty-directory-whitelist
   #{})
 
+(def markdown-document-roots
+  ["docs/"
+   "spikes/"])
+
+(def root-markdown-document-whitelist
+  #{"README.md"})
+
+(def anywhere-markdown-document-names
+  #{"AGENTS.md"})
+
 (def product-cli-governance-path
   "src/vibe_flow/system.clj")
 
@@ -125,7 +135,11 @@
 
    :directory-size
    {:intent "Keep directory fan-out bounded so module families stay discoverable and extensible."
-    :guidance "Split the flagged directory into clearer subdirectories, or move a distinct module family into a nearby namespace subtree."}})
+    :guidance "Split the flagged directory into clearer subdirectories, or move a distinct module family into a nearby namespace subtree."}
+
+   :markdown-location
+   {:intent "Keep Markdown documents in governed document areas instead of scattering planning notes and decisions across the repository."
+    :guidance "Move the Markdown file under docs/ for formal project documents or spikes/ for historical exploration, unless it is one of the explicitly whitelisted root entry documents."}})
 
 (defn rule-metadata [rule-id]
   (assoc (get rules rule-id) :id rule-id))

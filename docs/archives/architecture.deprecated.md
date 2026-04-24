@@ -1,6 +1,6 @@
 # Task-Type Driven Coding Agent Toolchain Architecture
 
-> 本文档基于 `design.md` 的设计理念，对系统架构进行图示化整理。
+> 本文档基于 `docs/design.md` 的设计理念，对系统架构进行图示化整理。
 > 它是“理解版架构图”，用于审阅设计是否表达准确，不替代正式规范。
 
 ## 1. 设计目标

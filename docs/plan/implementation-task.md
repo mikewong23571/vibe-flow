@@ -23,7 +23,7 @@ that are already clear, stable, and actionable
 * 不从头重新发明系统
 * 不继续扩张探索范围
 * 不把尚未收敛的问题一起编码
-* 先把根目录正式文档中已经清晰的设计部分落到正式代码骨架
+* 先把正式文档中已经清晰的设计部分落到正式代码骨架
 
 ## 2. 文档参考顺序
 
@@ -33,9 +33,9 @@ that are already clear, stable, and actionable
 
 下面三份文档是正式实现的直接依据：
 
-1. [design.md](/home/mikewong/proj/main/vibe-flow/design.md)
-2. [architecture.md](/home/mikewong/proj/main/vibe-flow/architecture.md)
-3. [governance.md](/home/mikewong/proj/main/vibe-flow/governance.md)
+1. [design.md](/home/mikewong/proj/main/vibe-flow/docs/design.md)
+2. [architecture.md](/home/mikewong/proj/main/vibe-flow/docs/architecture.md)
+3. [governance.md](/home/mikewong/proj/main/vibe-flow/docs/governance.md)
 
 它们分别回答：
 
@@ -76,7 +76,7 @@ that are already clear, stable, and actionable
 使用原则：
 
 * 只在需要理解设计演化时查看
-* 不得用来推翻根目录正式文档
+* 不得用来推翻正式文档
 * 不得把早期试验性结构重新带回正式代码
 
 ## 3. 当前实现的总边界
@@ -288,7 +288,7 @@ System
 
 ## 7. 治理约束
 
-正式实现必须满足 [governance.md](/home/mikewong/proj/main/vibe-flow/governance.md) 和机审规则。
+正式实现必须满足 [governance.md](/home/mikewong/proj/main/vibe-flow/docs/governance.md) 和机审规则。
 
 ### 7.1 硬约束
 
@@ -407,7 +407,7 @@ formal codebase
 具体完成定义：
 
 * 正式代码不再依赖 spike 目录才能表达主干
-* 根目录 `design.md / architecture.md / governance.md` 中清晰部分有正式代码对应
+* `docs/design.md / docs/architecture.md / docs/governance.md` 中清晰部分有正式代码对应
 * 治理校验始终通过
 * pre-commit 始终可拦截违规变更
 * 仍然待定的问题被明确留在边界外，而不是被偷偷编码
@@ -416,7 +416,7 @@ formal codebase
 
 每次开始实现一个模块前，都先回答下面四个问题：
 
-1. 这部分是否已经被根目录正式文档清晰定义
+1. 这部分是否已经被正式文档清晰定义
 2. 这次改动应落在哪一层
 3. 这次改动是否会破坏治理约束
 4. 这次改动是否把未收敛问题过早编码

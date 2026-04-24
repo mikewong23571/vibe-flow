@@ -2,7 +2,7 @@
 
 这份文档是当前 repo 的正式架构说明。
 
-它建立在 [design.md](/home/mikewong/proj/main/vibe-flow/design.md) 的正式设计基线上，负责回答：
+它建立在 [design.md](/home/mikewong/proj/main/vibe-flow/docs/design.md) 的正式设计基线上，负责回答：
 
 * 系统由哪些层构成
 * 它们之间如何依赖
