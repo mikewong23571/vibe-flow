@@ -104,11 +104,19 @@
                                  (map :task-id))]
     (set (concat unfinished-runs unfinished-mgr-runs))))
 
-(defn select-runnable-task [target-root]
-  (let [blocked-task-ids (unfinished-task-ids target-root)]
-    (first (filter #(and (not (terminal-stage? (task-stage %)))
-                         (not (contains? blocked-task-ids (:id %))))
-                   (task-store/load-tasks target-root)))))
+(defn task-matches-filter? [task task-type]
+  (or (nil? task-type)
+      (= (:task-type task) (task-type/task-type-id task-type))))
+
+(defn select-runnable-task
+  ([target-root]
+   (select-runnable-task target-root {}))
+  ([target-root {:keys [task-type]}]
+   (let [blocked-task-ids (unfinished-task-ids target-root)]
+     (first (filter #(and (task-matches-filter? % task-type)
+                          (not (terminal-stage? (task-stage %)))
+                          (not (contains? blocked-task-ids (:id %))))
+                    (task-store/load-tasks target-root))))))
 
 (defn create-mgr-run!
   ([target-root task launcher]
@@ -126,6 +134,12 @@
     {:ok? true
      :decision :error
      :message "DECISION: error\nREASON: no worker is defined for the current task stage."}))
+
+(defn assert-supported-mgr-launcher! [mgr-launcher task]
+  (when-not (contains? #{:mock} mgr-launcher)
+    (throw (ex-info "Unsupported mgr launcher."
+                    {:mgr-launcher mgr-launcher
+                     :task-id (:id task)}))))
 
 (defn apply-mgr-decision! [target-root task mgr-run-record decision message worker-launcher]
   (let [mgr-result {:ok? true
@@ -217,29 +231,64 @@
   ([target-root]
    (run-once! target-root :mock :mock))
   ([target-root worker-launcher mgr-launcher]
-   (when-let [task (select-runnable-task target-root)]
-     (case mgr-launcher
-       :mock (let [mgr-run-record (create-mgr-run! target-root task mgr-launcher worker-launcher)
-                   {:keys [decision message]} (mock-mgr-result target-root task)]
-               (apply-mgr-decision! target-root task mgr-run-record decision message worker-launcher))
-       (throw (ex-info "Unsupported mgr launcher."
-                       {:mgr-launcher mgr-launcher
-                        :task-id (:id task)}))))))
+   (run-once! target-root worker-launcher mgr-launcher {}))
+  ([target-root worker-launcher mgr-launcher options]
+   (when-let [task (select-runnable-task target-root options)]
+     (assert-supported-mgr-launcher! mgr-launcher task)
+     (let [mgr-run-record (create-mgr-run! target-root task mgr-launcher worker-launcher)
+           {:keys [decision message]} (mock-mgr-result target-root task)]
+       (apply-mgr-decision! target-root task mgr-run-record decision message worker-launcher)))))
 
 (defn run-loop!
   ([target-root max-steps]
    (run-loop! target-root :mock :mock max-steps))
   ([target-root worker-launcher mgr-launcher max-steps]
+   (run-loop! target-root worker-launcher mgr-launcher max-steps {}))
+  ([target-root worker-launcher mgr-launcher max-steps options]
    (loop [remaining max-steps
           results []]
-     (if (or (zero? remaining) (nil? (select-runnable-task target-root)))
+     (if (or (zero? remaining) (nil? (select-runnable-task target-root options)))
        results
        (recur (dec remaining)
-              (conj results (run-once! target-root worker-launcher mgr-launcher)))))))
+              (conj results (run-once! target-root worker-launcher mgr-launcher options)))))))
+
+(def default-poll-interval-ms 5000)
+
+(defn run-poll-loop!
+  [target-root worker-launcher mgr-launcher
+   {:keys [task-type poll-interval-ms max-steps max-idle-polls]
+    :or {poll-interval-ms default-poll-interval-ms}}]
+  (loop [steps 0
+         idle-polls 0
+         results []]
+    (cond
+      (and max-steps (>= steps max-steps))
+      {:status :max-steps-reached
+       :steps steps
+       :idle-polls idle-polls
+       :task-type task-type
+       :results results}
+
+      :else
+      (if-let [result (run-once! target-root
+                                 worker-launcher
+                                 mgr-launcher
+                                 {:task-type task-type})]
+        (recur (inc steps) 0 (conj results result))
+        (if (and max-idle-polls (>= idle-polls max-idle-polls))
+          {:status :idle-timeout
+           :steps steps
+           :idle-polls idle-polls
+           :task-type task-type
+           :results results}
+          (do
+            (Thread/sleep poll-interval-ms)
+            (recur steps (inc idle-polls) results)))))))
 
 (defn control-blueprint []
   {:select-runnable-task select-runnable-task
    :create-mgr-run! create-mgr-run!
    :advance-task! advance-task!
    :run-once! run-once!
-   :run-loop! run-loop!})
+   :run-loop! run-loop!
+   :run-poll-loop! run-poll-loop!})

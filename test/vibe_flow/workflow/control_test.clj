@@ -232,3 +232,50 @@
           (is (re-find #"before hook ran" (get-in prepared-run [:prompt :text])))))
       (finally
         (install-fixture/delete-tree! target-root)))))
+
+(deftest select-runnable-task-and-run-loop-support-task-type-filtering
+  (let [target-root (install-fixture/init-git-target! (install-fixture/make-temp-dir))]
+    (try
+      (install/install! target-root)
+      (task-type-manager/create-task-type! target-root :impl)
+      (task-type-manager/create-task-type! target-root :ops)
+      (domain/create-collection! target-root
+                                 {:id "impl-backlog"
+                                  :task-type :impl
+                                  :name "Implementation backlog"})
+      (domain/create-collection! target-root
+                                 {:id "ops-backlog"
+                                  :task-type :ops
+                                  :name "Operations backlog"})
+      (domain/create-task! target-root
+                           {:id "impl-task-1"
+                            :collection-id "impl-backlog"
+                            :task-type :impl
+                            :goal "Implement the feature."
+                            :scope ["Edit src/ only."]
+                            :constraints ["Do not change workflow metadata."]
+                            :success-criteria ["Feature behavior is implemented."]})
+      (domain/create-task! target-root
+                           {:id "ops-task-1"
+                            :collection-id "ops-backlog"
+                            :task-type :ops
+                            :goal "Handle an ops workflow."
+                            :scope ["Inspect runtime metadata only."]
+                            :constraints ["Do not change workflow metadata."]
+                            :success-criteria ["The ops task progresses."]})
+      (testing "task_type filter isolates runnable selection and execution"
+        (is (= "impl-task-1"
+               (:id (control/select-runnable-task target-root {:task-type :impl}))))
+        (is (= "ops-task-1"
+               (:id (control/select-runnable-task target-root {:task-type :ops}))))
+        (let [results (control/run-loop! target-root :mock :mock 4 {:task-type :impl})
+              impl-task (task-store/load-task target-root "impl-task-1")
+              ops-task (task-store/load-task target-root "ops-task-1")]
+          (is (= 4 (count results)))
+          (is (= :done (:stage impl-task)))
+          (is (= :todo (:stage ops-task)))
+          (is (nil? (:latest-run ops-task)))
+          (is (= "ops-task-1"
+                 (:id (control/select-runnable-task target-root {:task-type :ops}))))))
+      (finally
+        (install-fixture/delete-tree! target-root)))))

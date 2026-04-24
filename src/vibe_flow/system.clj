@@ -107,11 +107,9 @@
       :collection collection-result
       :task task-result})))
 
-(defn current-command-root []
-  (.getCanonicalPath ^java.io.File (io/file ".")))
+(defn current-command-root [] (.getCanonicalPath ^java.io.File (io/file ".")))
 
-(defn getenv [name]
-  (System/getenv name))
+(defn getenv [name] (System/getenv name))
 
 (defn cli-caller-root []
   (.getCanonicalPath ^java.io.File (io/file (or (getenv "VIBE_FLOW_CLI_CWD") "."))))
@@ -141,9 +139,8 @@
   ([target-root]
    (task-type-manager/list-task-types target-root)))
 
-(defn inspect-task-type
-  ([target-root task-type]
-   (task-type-manager/inspect-task-type target-root task-type)))
+(defn inspect-task-type [target-root task-type]
+  (task-type-manager/inspect-task-type target-root task-type))
 
 (defn parse-launcher [value]
   (case value
@@ -161,6 +158,18 @@
                       {:decision value
                        :allowed-decisions (vec (sort-by name allowed))})))
     decision))
+
+(defn parse-cli-long [option-name value]
+  (when value
+    (try
+      (let [parsed (Long/parseLong value)]
+        (when (neg? parsed)
+          (throw (ex-info "CLI option must be a non-negative integer."
+                          {:option option-name :value value})))
+        parsed)
+      (catch NumberFormatException _
+        (throw (ex-info "CLI option must be an integer."
+                        {:option option-name :value value}))))))
 
 (defn parse-kv-args [args]
   (loop [remaining args
@@ -186,7 +195,11 @@
      :task-type (get options "--task-type")
      :task-id (get options "--task-id")
      :mgr-run-id (get options "--mgr-run-id")
+     :mgr-launcher (get options "--mgr-launcher")
      :worker-launcher (get options "--worker-launcher")
+     :poll-interval-ms (parse-cli-long "--poll-interval-ms" (get options "--poll-interval-ms"))
+     :max-steps (parse-cli-long "--max-steps" (get options "--max-steps"))
+     :max-idle-polls (parse-cli-long "--max-idle-polls" (get options "--max-idle-polls"))
      :decision (get options "--decision")
      :reason (get options "--reason")}))
 
@@ -198,11 +211,31 @@
   value)
 
 (defn mgr-advance! [target-root task-id mgr-run-id decision reason]
-  (workflow-control/advance-task! target-root
-                                  task-id
-                                  mgr-run-id
-                                  (parse-decision decision)
-                                  reason))
+  (workflow-control/advance-task! target-root task-id mgr-run-id (parse-decision decision) reason))
+
+(defn require-installed-target-root! [command target-root]
+  (when-not (system-store/installed? target-root)
+    (throw (ex-info "Command must run against an installed workflow target."
+                    {:command command
+                     :target-root target-root
+                     :hint "Run from the target repo root or pass --target <repo>."})))
+  target-root)
+
+(defn mgr-start!
+  [target-root task-type mgr-launcher worker-launcher poll-interval-ms max-steps max-idle-polls]
+  (let [task-type* (definition/task-type-id
+                    (required-cli-option "mgr-start" "--task-type" task-type))
+        target-root* (require-installed-target-root! "mgr-start" target-root)
+        mgr-launcher* (parse-launcher (or mgr-launcher "mock"))
+        worker-launcher* (parse-launcher (or worker-launcher (name mgr-launcher*)))]
+    (workflow-control/run-poll-loop!
+     target-root*
+     worker-launcher*
+     mgr-launcher*
+     {:task-type task-type*
+      :poll-interval-ms (or poll-interval-ms workflow-control/default-poll-interval-ms)
+      :max-steps max-steps
+      :max-idle-polls max-idle-polls})))
 
 (defn planned-product-cli-command! [command metadata]
   (throw (ex-info "Governed product CLI command is not implemented yet."
@@ -279,42 +312,33 @@
 (defn governed-cli-command-whitelist []
   {:implemented {"help" {:status :implemented
                          :kind :singleton-command}
-                 "install" {:status :implemented
-                            :kind :singleton-command}
-                 "install-target" {:status :implemented
-                                   :kind :singleton-command}
-                 "bootstrap" {:status :implemented
-                              :kind :singleton-command}
-                 "list-task-types" {:status :implemented
-                                    :kind :singleton-command}
-                 "inspect-task-type" {:status :implemented
-                                      :kind :singleton-command}
-                 "mgr-advance" {:status :implemented
-                                :kind :singleton-command}}
+                 "install" {:status :implemented :kind :singleton-command}
+                 "install-target" {:status :implemented :kind :singleton-command}
+                 "bootstrap" {:status :implemented :kind :singleton-command}
+                 "mgr-start" {:status :implemented :kind :singleton-command}
+                 "list-task-types" {:status :implemented :kind :singleton-command}
+                 "inspect-task-type" {:status :implemented :kind :singleton-command}
+                 "mgr-advance" {:status :implemented :kind :singleton-command}}
    :design-doc (governed-product-cli-design-doc-path)
    :planned {:providers (governed-cli-provider-whitelist)
              :registry-contract (governed-cli-registry-contract)}})
 
 (defn usage-lines []
-  ["Usage:"
-   "  vibe-flow install"
-   "  vibe-flow install-target [--target <repo>]"
+  ["Usage:" "  vibe-flow install" "  vibe-flow install-target [--target <repo>]"
    "  vibe-flow bootstrap [--target <repo>]"
+   "  vibe-flow mgr-start [--target <repo>] --task-type <id> [--mgr-launcher <mock>] [--worker-launcher <mock|codex>] [--poll-interval-ms <ms>] [--max-steps <n>] [--max-idle-polls <n>]"
    "  vibe-flow list-task-types [--target <repo>]"
    "  vibe-flow inspect-task-type [--target <repo>] --task-type <id>"
    "  vibe-flow mgr-advance --target <repo> --task-id <id> --mgr-run-id <id> --decision <impl|review|refine|done|error> --reason <text>"
-   ""
-   "Examples:"
-   "  vibe-flow install"
-   "  vibe-flow install-target --target /path/to/repo"
+   "" "Examples:" "  vibe-flow install" "  vibe-flow install-target --target /path/to/repo"
    "  vibe-flow bootstrap --target /path/to/repo"
+   "  cd /path/to/repo && vibe-flow mgr-start --task-type impl"
+   "  vibe-flow mgr-start --target /path/to/repo --task-type impl --mgr-launcher mock --worker-launcher mock --poll-interval-ms 5000"
    "  vibe-flow list-task-types --target /path/to/repo"
    "  vibe-flow inspect-task-type --target /path/to/repo --task-type impl"
    "  vibe-flow mgr-advance --target /path/to/repo --task-id task-1 --mgr-run-id mgr-1 --decision impl --reason \"start implementation\""])
 
-(defn print-usage! []
-  (doseq [line (usage-lines)]
-    (println line)))
+(defn print-usage! [] (doseq [line (usage-lines)] (println line)))
 
 (defn system-blueprint []
   {:toolchain {:install! install-toolchain!}
@@ -342,7 +366,8 @@
                       :create-mgr-run! workflow-control/create-mgr-run!
                       :advance-task! workflow-control/advance-task!
                       :run-once! workflow-control/run-once!
-                      :run-loop! workflow-control/run-loop!}
+                      :run-loop! workflow-control/run-loop!
+                      :run-poll-loop! workflow-control/run-poll-loop!}
    :system-state {:installed? system-store/installed?
                   :load-install system-store/load-install
                   :load-target system-store/load-target
@@ -350,12 +375,21 @@
                   :load-toolchain system-store/load-toolchain}})
 
 (defn -main [& args]
-  (let [{:keys [command target task-type task-id mgr-run-id decision reason]} (parse-cli-args args)]
+  (let [{:keys [command target task-type task-id mgr-run-id mgr-launcher worker-launcher
+                poll-interval-ms max-steps max-idle-polls decision reason]}
+        (parse-cli-args args)]
     (case command
       "help" (print-usage!)
       "install" (prn (install-toolchain!))
       "install-target" (prn (install-target! target))
       "bootstrap" (prn (bootstrap-self-host! target))
+      "mgr-start" (prn (mgr-start! target
+                                   task-type
+                                   mgr-launcher
+                                   worker-launcher
+                                   poll-interval-ms
+                                   max-steps
+                                   max-idle-polls))
       "list-task-types" (prn (list-task-types target))
       "inspect-task-type" (prn (inspect-task-type target
                                                   (required-cli-option command "--task-type" task-type)))

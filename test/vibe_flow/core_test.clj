@@ -201,6 +201,81 @@
       (finally
         (install-fixture/delete-tree! target-root)))))
 
+(deftest mgr-start-cli-polls-a-task-type-until-the-workflow-closes
+  (let [target-root (install-fixture/init-git-target! (install-fixture/make-temp-dir))]
+    (try
+      (install/install! target-root)
+      (task-type-manager/create-task-type! target-root :impl)
+      (domain/create-collection! target-root
+                                 {:id "impl-backlog"
+                                  :task-type :impl
+                                  :name "Implementation backlog"})
+      (domain/create-task! target-root
+                           {:id "impl-task-mgr-start"
+                            :collection-id "impl-backlog"
+                            :task-type :impl
+                            :goal "Close the loop through mgr-start."
+                            :scope ["Edit src/ only."]
+                            :constraints ["Do not change workflow metadata."]
+                            :success-criteria ["The task is driven to done through mgr-start."]})
+      (let [output (with-redefs [vibe-flow.system/getenv
+                                 (fn [name]
+                                   (when (= name "VIBE_FLOW_CLI_CWD")
+                                     (str target-root)))]
+                     (with-out-str
+                       (system/-main "mgr-start"
+                                     "--task-type" "impl"
+                                     "--mgr-launcher" "mock"
+                                     "--worker-launcher" "mock"
+                                     "--poll-interval-ms" "0"
+                                     "--max-steps" "4")))
+            task (domain/inspect-task target-root "impl-task-mgr-start")]
+        (is (re-find #":status :max-steps-reached" output))
+        (is (re-find #":steps 4" output))
+        (is (= :done (:stage task)))
+        (is (= 4 (:mgr-count task)))
+        (is (= 4 (:run-count task))))
+      (finally
+        (install-fixture/delete-tree! target-root)))))
+
+(deftest mgr-start-cli-requires-installed-target-when-using-current-directory-default
+  (let [target-root (install-fixture/init-git-target! (install-fixture/make-temp-dir))]
+    (try
+      (with-redefs [vibe-flow.system/getenv
+                    (fn [name]
+                      (when (= name "VIBE_FLOW_CLI_CWD")
+                        (str target-root)))]
+        (is (thrown-with-msg?
+             clojure.lang.ExceptionInfo
+             #"installed workflow target"
+             (system/-main "mgr-start"
+                           "--task-type" "impl"
+                           "--mgr-launcher" "mock"
+                           "--worker-launcher" "mock"
+                           "--max-idle-polls" "0"))))
+      (finally
+        (install-fixture/delete-tree! target-root)))))
+
+(deftest mgr-start-cli-rejects-negative-numeric-options
+  (is (thrown-with-msg?
+       clojure.lang.ExceptionInfo
+       #"non-negative integer"
+       (system/-main "mgr-start"
+                     "--task-type" "impl"
+                     "--poll-interval-ms" "-1")))
+  (is (thrown-with-msg?
+       clojure.lang.ExceptionInfo
+       #"non-negative integer"
+       (system/-main "mgr-start"
+                     "--task-type" "impl"
+                     "--max-steps" "-1")))
+  (is (thrown-with-msg?
+       clojure.lang.ExceptionInfo
+       #"non-negative integer"
+       (system/-main "mgr-start"
+                     "--task-type" "impl"
+                     "--max-idle-polls" "-1"))))
+
 (deftest system-install-toolchain-materializes-user-command
   (let [temp-home (install-fixture/make-temp-dir)
         temp-data-home (install-fixture/make-temp-dir)
