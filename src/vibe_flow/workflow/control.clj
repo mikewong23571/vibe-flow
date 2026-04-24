@@ -135,8 +135,45 @@
      :decision :error
      :message "DECISION: error\nREASON: no worker is defined for the current task stage."}))
 
+(defn mgr-run-summary [target-root task-id mgr-run-id]
+  (let [task (task-store/load-task target-root task-id)
+        mgr-run-record (mgr-run-store/load-mgr-run target-root mgr-run-id)
+        latest-run-id (:latest-run task)
+        latest-run (when latest-run-id
+                     (run-store/load-run target-root latest-run-id))]
+    {:task-id task-id
+     :mgr-run-id mgr-run-id
+     :decision (get-in mgr-run-record [:result :decision])
+     :next-stage (:stage task)
+     :run-id (:latest-run task)
+     :worker (:latest-worker task)
+     :worktree (get-in latest-run [:worktree :dir])}))
+
+(defn finalize-mgr-launch-error! [target-root task mgr-run-record launch-result]
+  (let [finalized-mgr-run (mgr-run/finalize-mgr-run! mgr-run-record launch-result)
+        updated-task (task-error-update task (:message launch-result))]
+    (mgr-run-store/save-mgr-run! target-root finalized-mgr-run)
+    (task-store/save-task! target-root updated-task)
+    {:task-id (:id updated-task)
+     :mgr-run-id (:id finalized-mgr-run)
+     :decision :error
+     :next-stage :error}))
+
+(defn mgr-launch-missing-callback-result [mgr-launcher]
+  {:ok? false
+   :control :error
+   :message (str "mgr launcher exited without finalizing the mgr_run via callback (" (name mgr-launcher) ").")})
+
+(defn launch-mgr! [target-root task mgr-run-record mgr-launcher]
+  (case mgr-launcher
+    :mock (mock-mgr-result target-root task)
+    :codex (mgr-run/launch-mgr-codex! target-root task mgr-run-record)
+    (throw (ex-info "Unsupported mgr launcher."
+                    {:mgr-launcher mgr-launcher
+                     :task-id (:id task)}))))
+
 (defn assert-supported-mgr-launcher! [mgr-launcher task]
-  (when-not (contains? #{:mock} mgr-launcher)
+  (when-not (contains? #{:mock :codex} mgr-launcher)
     (throw (ex-info "Unsupported mgr launcher."
                     {:mgr-launcher mgr-launcher
                      :task-id (:id task)}))))
@@ -236,8 +273,27 @@
    (when-let [task (select-runnable-task target-root options)]
      (assert-supported-mgr-launcher! mgr-launcher task)
      (let [mgr-run-record (create-mgr-run! target-root task mgr-launcher worker-launcher)
-           {:keys [decision message]} (mock-mgr-result target-root task)]
-       (apply-mgr-decision! target-root task mgr-run-record decision message worker-launcher)))))
+           launch-result (launch-mgr! target-root task mgr-run-record mgr-launcher)]
+       (if (= :mock mgr-launcher)
+         (apply-mgr-decision! target-root
+                              task
+                              mgr-run-record
+                              (:decision launch-result)
+                              (:message launch-result)
+                              worker-launcher)
+         (let [updated-mgr-run (mgr-run-store/load-mgr-run target-root (:id mgr-run-record))]
+           (cond
+             (:ended-at updated-mgr-run)
+             (mgr-run-summary target-root (:id task) (:id mgr-run-record))
+
+             (:ok? launch-result)
+             (finalize-mgr-launch-error! target-root
+                                         task
+                                         mgr-run-record
+                                         (mgr-launch-missing-callback-result mgr-launcher))
+
+             :else
+             (finalize-mgr-launch-error! target-root task mgr-run-record launch-result))))))))
 
 (defn run-loop!
   ([target-root max-steps]

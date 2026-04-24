@@ -4,6 +4,7 @@
    [vibe-flow.management.domain :as domain]
    [vibe-flow.management.task-type :as task-type-manager]
    [vibe-flow.platform.runtime.launcher :as launcher]
+   [vibe-flow.platform.runtime.mgr-run :as mgr-run]
    [vibe-flow.platform.runtime.run :as run]
    [vibe-flow.platform.state.mgr-run-store :as mgr-run-store]
    [vibe-flow.platform.state.run-store :as run-store]
@@ -215,8 +216,86 @@
       (is (thrown-with-msg?
            clojure.lang.ExceptionInfo
            #"Unsupported mgr launcher"
-           (control/run-once! target-root :mock :codex)))
+           (control/run-once! target-root :mock :bogus)))
       (is (empty? (mgr-run-store/load-mgr-runs target-root)))
       (is (= "impl-task-1" (:id (control/select-runnable-task target-root))))
+      (finally
+        (install-fixture/delete-tree! target-root)))))
+
+(deftest codex-mgr-launch-failure-finalizes-mgr-run-and-marks-task-error
+  (let [target-root (install-fixture/init-git-target! (install-fixture/make-temp-dir))]
+    (try
+      (install/install! target-root)
+      (task-type-manager/create-task-type! target-root :impl)
+      (install-fixture/create-agent-home-configs! target-root [:mgr_codex])
+      (domain/create-collection! target-root
+                                 {:id "impl-backlog"
+                                  :task-type :impl
+                                  :name "Implementation backlog"})
+      (domain/create-task! target-root
+                           {:id "impl-task-codex-mgr-failure"
+                            :collection-id "impl-backlog"
+                            :task-type :impl
+                            :goal "Stop on a failed codex mgr launch."
+                            :scope ["Edit src/ only."]
+                            :constraints ["Do not change workflow metadata."]
+                            :success-criteria ["Failed mgr launches do not leave orphaned state."]})
+      (with-redefs [mgr-run/launch-mgr-codex!
+                    (fn [_ _ _]
+                      {:ok? false
+                       :control :error
+                       :message "codex mgr failed"})]
+        (let [result (control/run-once! target-root :mock :codex)
+              task (task-store/load-task target-root "impl-task-codex-mgr-failure")
+              mgr-runs (mgr-run-store/load-mgr-runs target-root)
+              mgr-run (first mgr-runs)]
+          (is (= :error (:next-stage result)))
+          (is (= 1 (count mgr-runs)))
+          (is (some? (:ended-at mgr-run)))
+          (is (= true (:error? mgr-run)))
+          (is (= :error (get-in mgr-run [:result :control])))
+          (is (= "codex mgr failed" (get-in mgr-run [:result :message])))
+          (is (= :error (:stage task)))
+          (is (re-find #"codex mgr failed" (:error-output task)))
+          (is (nil? (control/select-runnable-task target-root {:task-type :impl})))))
+      (finally
+        (install-fixture/delete-tree! target-root)))))
+
+(deftest codex-mgr-callback-path-advances-task-without-leaving-mgr-run-open
+  (let [target-root (install-fixture/init-git-target! (install-fixture/make-temp-dir))]
+    (try
+      (install/install! target-root)
+      (task-type-manager/create-task-type! target-root :impl)
+      (install-fixture/create-agent-home-configs! target-root [:mgr_codex])
+      (domain/create-collection! target-root
+                                 {:id "impl-backlog"
+                                  :task-type :impl
+                                  :name "Implementation backlog"})
+      (domain/create-task! target-root
+                           {:id "impl-task-codex-mgr"
+                            :collection-id "impl-backlog"
+                            :task-type :impl
+                            :goal "Advance through the codex mgr callback."
+                            :scope ["Edit src/ only."]
+                            :constraints ["Do not change workflow metadata."]
+                            :success-criteria ["The codex mgr callback path advances the task."]})
+      (with-redefs [mgr-run/launch-mgr-codex!
+                    (fn [target-root task mgr-run]
+                      (control/advance-task! target-root
+                                             (:id task)
+                                             (:id mgr-run)
+                                             :impl
+                                             "launch implementation")
+                      {:ok? true
+                       :message "mgr callback invoked"})]
+        (let [result (control/run-once! target-root :mock :codex)
+              task (task-store/load-task target-root "impl-task-codex-mgr")
+              mgr-run (mgr-run-store/load-mgr-run target-root (:mgr-run-id result))]
+          (is (= :impl (:decision result)))
+          (is (= :awaiting-review (:next-stage result)))
+          (is (= :awaiting-review (:stage task)))
+          (is (= :impl (:latest-worker task)))
+          (is (some? (:ended-at mgr-run)))
+          (is (= :impl (get-in mgr-run [:result :decision])))))
       (finally
         (install-fixture/delete-tree! target-root)))))

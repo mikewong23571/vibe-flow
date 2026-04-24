@@ -1,11 +1,12 @@
 (ns vibe-flow.platform.runtime.mgr-run
   (:require
    [clojure.java.io :as io]
+   [clojure.java.shell :as shell]
    [clojure.string :as str]
    [vibe-flow.definition.task-type :as task-type]
    [vibe-flow.platform.runtime.agent-home-adapter :as agent-home-adapter]
    [vibe-flow.platform.state.system-store :as system-store]
-   [vibe-flow.platform.support.shell :as shell]
+   [vibe-flow.platform.support.shell :as shell-support]
    [vibe-flow.platform.support.time :as time]
    [vibe-flow.platform.target.paths :as paths]))
 
@@ -64,11 +65,11 @@
   (str "#!/usr/bin/env bash\n"
        "set -euo pipefail\n"
        "exec "
-       (shell/join-command [workflow-command
-                            "mgr-advance"
-                            "--target" (str (paths/resolve-target-root target-root))
-                            "--task-id" (:id task)
-                            "--mgr-run-id" mgr-run-id])
+       (shell-support/join-command [workflow-command
+                                    "mgr-advance"
+                                    "--target" (str (paths/resolve-target-root target-root))
+                                    "--task-id" (:id task)
+                                    "--mgr-run-id" mgr-run-id])
        " \"$@\"\n"))
 
 (defn write-cli-wrapper! [target-root workflow-command task mgr-run-id]
@@ -136,3 +137,56 @@
            :output (assoc (:output mgr-run)
                           :text (:message result))
            :result result)))
+
+(defn mgr-codex-env [home-check]
+  (cond-> (into {} (System/getenv))
+    home-check
+    (assoc "CODEX_HOME" (:path home-check))))
+
+(defn mgr-codex-command [target-root mgr-run]
+  ["codex"
+   "exec"
+   "-C" (str (paths/resolve-target-root target-root))
+   "--dangerously-bypass-approvals-and-sandbox"
+   (get-in mgr-run [:prompt :text])])
+
+(defn mgr-launch-failure-result [target-root mgr-run ex]
+  {:ok? false
+   :control :error
+   :message (.getMessage ex)
+   :launch {:launcher :codex
+            :cmd (mgr-codex-command target-root mgr-run)
+            :code-home (str (paths/resolve-target-root target-root))
+            :agent-home (ex-data ex)
+            :stdout ""
+            :stderr (.getMessage ex)
+            :exit nil
+            :prompt-path (get-in mgr-run [:prompt :path])
+            :output-path (get-in mgr-run [:output :path])}})
+
+(defn mgr-codex-launch-result [target-root mgr-run cmd home-check {:keys [exit out err]}]
+  {:ok? (zero? exit)
+   :control (when-not (zero? exit) :error)
+   :message (str/trim (str out "\n" err))
+   :launch {:launcher :codex
+            :cmd cmd
+            :code-home (str (paths/resolve-target-root target-root))
+            :agent-home home-check
+            :stdout out
+            :stderr err
+            :exit exit
+            :prompt-path (get-in mgr-run [:prompt :path])
+            :output-path (get-in mgr-run [:output :path])}})
+
+(defn launch-mgr-codex! [target-root task mgr-run]
+  (try
+    (let [cmd (mgr-codex-command target-root mgr-run)
+          home-check (mgr-home-context target-root task)
+          env (mgr-codex-env home-check)
+          result (apply shell/sh
+                        (concat cmd
+                                [:dir (str (paths/resolve-target-root target-root))]
+                                [:env env]))]
+      (mgr-codex-launch-result target-root mgr-run cmd home-check result))
+    (catch Exception ex
+      (mgr-launch-failure-result target-root mgr-run ex))))
